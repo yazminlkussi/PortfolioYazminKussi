@@ -1,0 +1,477 @@
+---
+// Moodboard: obras que llegan en vivo desde la API pública de colecciones del
+// Victoria and Albert Museum de Londres (https://developers.vam.ac.uk/). No necesita clave.
+// (Primero probé la del Art Institute of Chicago, pero bloquea pedidos desde el navegador.)
+//
+// Estados que resuelve:
+//   cargando -> esqueletos de papel
+//   listo    -> grilla de obras
+//   vacio    -> la búsqueda no trajo obras con imagen
+//   error    -> sin conexión, API caída o demora > 8 s (con botón "reintentar")
+//
+// Cada obra se puede "pegar" en la Mesa de collage: se manda un evento
+// `mesa:pegar` que escucha el componente MesaDeCollage.
+
+interface Tema {
+  etiqueta: string;
+  busqueda: string;
+}
+
+interface Props {
+  temas: Tema[];
+}
+
+const { temas } = Astro.props;
+---
+
+<div class="mood" data-mood>
+  <div class="mood__controles">
+    <div class="mood__temas" role="group" aria-label="Temas del moodboard">
+      {
+        temas.map((t, i) => (
+          <button
+            class="chip"
+            type="button"
+            data-busqueda={t.busqueda}
+            aria-pressed={i === 0 ? "true" : "false"}
+          >
+            {t.etiqueta}
+          </button>
+        ))
+      }
+    </div>
+
+    <form class="mood__buscar" data-buscar role="search">
+      <label class="sr-only" for="mood-q">Buscar obras (en inglés)</label>
+      <input id="mood-q" name="q" type="search" placeholder="buscá: matisse, poster, flowers…" autocomplete="off" />
+      <button class="boton" type="submit">Buscar</button>
+    </form>
+  </div>
+
+  <!-- aria-live: avisa a lectores de pantalla cuando cambia el estado -->
+  <p class="mood__estado" data-estado aria-live="polite"></p>
+
+  <ul class="mood__grilla" data-grilla aria-busy="true"></ul>
+
+  <div class="mood__aviso" data-aviso hidden>
+    <p class="mood__aviso-titulo" data-aviso-titulo></p>
+    <p class="mood__aviso-texto" data-aviso-texto></p>
+    <button class="boton" type="button" data-reintentar>Reintentar</button>
+  </div>
+
+  <p class="mood__credito">
+    Imágenes de la colección del Victoria and Albert Museum, Londres, vía su
+    <a href="https://developers.vam.ac.uk/" target="_blank" rel="noopener">API pública</a>. Uso no comercial.
+  </p>
+</div>
+
+<style>
+  .mood__controles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: center;
+    justify-content: space-between;
+    margin: 32px 0 12px;
+  }
+
+  .mood__temas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .chip {
+    font: 500 0.9375rem/1 var(--f-texto);
+    color: var(--tinta);
+    background: transparent;
+    border: 1.5px solid var(--tinta);
+    border-radius: 999px;
+    padding: 10px 16px;
+    min-height: 44px;
+    cursor: pointer;
+    transition: transform 160ms var(--ease-out), background-color 160ms ease, color 160ms ease;
+  }
+
+  .chip:active {
+    transform: scale(0.97);
+  }
+
+  .chip[aria-pressed="true"] {
+    background: var(--tinta);
+    color: var(--papel);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .chip:not([aria-pressed="true"]):hover {
+      background: var(--rosa-claro);
+    }
+  }
+
+  .mood__buscar {
+    display: flex;
+    gap: 8px;
+    flex: 1 1 280px;
+    max-width: 420px;
+  }
+
+  .mood__buscar input {
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+    /* 16px evita que el celular haga zoom al tocar el campo */
+    font: 400 1rem var(--f-texto);
+    color: var(--tinta);
+    background: var(--papel);
+    border: 1.5px solid var(--tinta);
+    border-radius: 999px;
+    padding: 0 16px;
+  }
+
+  .mood__buscar input::placeholder {
+    color: var(--tinta-suave);
+  }
+
+  .mood__estado {
+    min-height: 1.6em;
+    font-size: 0.9375rem;
+    color: var(--tinta-suave);
+    margin: 0 0 16px;
+  }
+
+  .mood__grilla {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    columns: 3 220px;
+    column-gap: 16px;
+  }
+
+  .mood__grilla :global(.obra) {
+    break-inside: avoid;
+    margin: 0 0 16px;
+    background: var(--papel);
+    border: 1.5px solid var(--tinta);
+    padding: 8px 8px 12px;
+    animation: aparecer 400ms var(--ease-out) both;
+    animation-delay: calc(var(--i, 0) * 50ms);
+  }
+
+  @keyframes aparecer {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
+
+  .mood__grilla :global(.obra img) {
+    width: 100%;
+    height: auto;
+    background: var(--papel-2);
+    /* Las obras entran con un leve filtro para que convivan con la paleta */
+    filter: saturate(0.85) contrast(1.02);
+  }
+
+  .mood__grilla :global(.obra__titulo) {
+    font-family: var(--f-display);
+    font-size: 1.25rem;
+    line-height: 1.15;
+    margin: 10px 2px 2px;
+  }
+
+  .mood__grilla :global(.obra__autor) {
+    font-size: 0.8125rem;
+    color: var(--tinta-suave);
+    margin: 0 2px 10px;
+  }
+
+  .mood__grilla :global(.obra__pegar) {
+    font: 500 0.875rem/1 var(--f-texto);
+    color: var(--rosa-texto);
+    background: transparent;
+    border: 1.5px dashed var(--rosa-texto);
+    border-radius: 999px;
+    padding: 8px 14px;
+    min-height: 40px;
+    cursor: pointer;
+    transition: transform 160ms var(--ease-out), background-color 160ms ease;
+  }
+
+  .mood__grilla :global(.obra__pegar:active) {
+    transform: scale(0.97);
+  }
+
+  .mood__grilla :global(.obra__pegar[data-pegado]) {
+    border-style: solid;
+    background: var(--rosa-claro);
+  }
+
+  /* Esqueleto mientras carga: papelitos que "respiran" */
+  .mood__grilla :global(.obra--esqueleto) {
+    height: var(--alto, 260px);
+    background: var(--papel-2);
+    border-style: dashed;
+    animation: respirar 1.2s ease-in-out infinite alternate;
+  }
+
+  @keyframes respirar {
+    to {
+      opacity: 0.5;
+    }
+  }
+
+  .mood__aviso {
+    text-align: center;
+    padding: 40px 16px;
+    border: 1.5px dashed var(--tinta-suave);
+  }
+
+  .mood__aviso-titulo {
+    font-family: var(--f-display);
+    font-size: 2rem;
+    margin: 0 0 6px;
+  }
+
+  .mood__aviso-texto {
+    color: var(--tinta-suave);
+    margin: 0 auto 20px;
+    max-width: 44ch;
+  }
+
+  .mood__credito {
+    font-size: 0.8125rem;
+    color: var(--tinta-suave);
+    margin-top: 16px;
+  }
+</style>
+
+<script>
+  const API = "https://api.vam.ac.uk/v2/objects/search";
+  const LIMITE_MS = 8000;
+
+  // Lo que devuelve la API (solo los campos que usamos)
+  interface RegistroVAM {
+    systemNumber: string;
+    objectType: string;
+    _primaryTitle: string;
+    _primaryMaker?: { name?: string };
+    _primaryDate?: string;
+    _images?: { _iiif_image_base_url?: string | null };
+  }
+
+  // Nuestra versión "limpia" de una obra
+  interface Obra {
+    id: string;
+    titulo: string;
+    autor: string;
+    fecha: string;
+    imagenBase: string;
+  }
+
+  // Pasamos del formato de la API a nuestro formato
+  function aObra(r: RegistroVAM): Obra | null {
+    const base = r._images?._iiif_image_base_url;
+    if (!base) return null; // sin imagen no nos sirve
+    const autor = r._primaryMaker?.name;
+    return {
+      id: r.systemNumber,
+      titulo: r._primaryTitle || r.objectType || "Sin título",
+      autor: autor && autor !== "Unknown" ? autor : "Autor desconocido",
+      fecha: r._primaryDate ?? "",
+      imagenBase: base,
+    };
+  }
+
+  const raiz = document.querySelector<HTMLElement>("[data-mood]")!;
+  const grilla = raiz.querySelector<HTMLUListElement>("[data-grilla]")!;
+  const estado = raiz.querySelector<HTMLElement>("[data-estado]")!;
+  const aviso = raiz.querySelector<HTMLElement>("[data-aviso]")!;
+  const avisoTitulo = raiz.querySelector<HTMLElement>("[data-aviso-titulo]")!;
+  const avisoTexto = raiz.querySelector<HTMLElement>("[data-aviso-texto]")!;
+  const chips = [...raiz.querySelectorAll<HTMLButtonElement>(".chip")];
+  const form = raiz.querySelector<HTMLFormElement>("[data-buscar]")!;
+
+  let busquedaActual = chips[0]?.dataset.busqueda ?? "collage";
+  let pedido: AbortController | null = null;
+
+  // IIIF: pedimos la imagen al ancho justo que necesitamos
+  const urlImagen = (base: string, ancho = 400) => `${base}full/${ancho},/0/default.jpg`;
+
+  // ---------- Estados ----------
+  function mostrarCargando() {
+    aviso.hidden = true;
+    grilla.setAttribute("aria-busy", "true");
+    estado.textContent = `Buscando obras de “${busquedaActual}”…`;
+    const altos = [280, 200, 320, 240, 300, 220];
+    grilla.innerHTML = altos
+      .map((a) => `<li class="obra obra--esqueleto" style="--alto:${a}px" aria-hidden="true"></li>`)
+      .join("");
+  }
+
+  function mostrarAviso(titulo: string, texto: string, conReintento: boolean) {
+    grilla.innerHTML = "";
+    grilla.setAttribute("aria-busy", "false");
+    avisoTitulo.textContent = titulo;
+    avisoTexto.textContent = texto;
+    aviso.querySelector<HTMLElement>("[data-reintentar]")!.hidden = !conReintento;
+    aviso.hidden = false;
+  }
+
+  function mostrarObras(obras: Obra[]) {
+    aviso.hidden = true;
+    grilla.setAttribute("aria-busy", "false");
+    estado.textContent = `${obras.length} obras de “${busquedaActual}”. Pegá las que te gusten en la mesa.`;
+    grilla.innerHTML = "";
+
+    obras.forEach((obra, i) => {
+      const li = document.createElement("li");
+      li.className = "obra";
+      li.style.setProperty("--i", String(i));
+
+      const img = document.createElement("img");
+      img.src = urlImagen(obra.imagenBase);
+      img.alt = `${obra.titulo}, ${obra.autor}`;
+      img.loading = "lazy";
+      img.decoding = "async";
+      // Si una imagen puntual no carga, sacamos esa obra sin romper el resto
+      img.addEventListener("error", () => li.remove());
+
+      const titulo = document.createElement("p");
+      titulo.className = "obra__titulo";
+      titulo.textContent = obra.titulo;
+
+      const autor = document.createElement("p");
+      autor.className = "obra__autor";
+      autor.textContent = [obra.autor, obra.fecha].filter(Boolean).join(" · ");
+
+      const pegar = document.createElement("button");
+      pegar.type = "button";
+      pegar.className = "obra__pegar";
+      pegar.textContent = "✂ Pegar en la mesa";
+      pegar.addEventListener("click", () => {
+        window.dispatchEvent(
+          new CustomEvent("mesa:pegar", {
+            detail: { id: `obra-${obra.id}`, src: urlImagen(obra.imagenBase, 300), titulo: obra.titulo },
+          })
+        );
+        pegar.dataset.pegado = "";
+        pegar.textContent = "✓ ¡Pegada! Bajá a la mesa";
+      });
+
+      li.append(img, titulo, autor, pegar);
+      grilla.append(li);
+    });
+  }
+
+  // ---------- Pedido a la API ----------
+  async function cargar(busqueda: string) {
+    busquedaActual = busqueda;
+
+    // Cache por sesión: si ya buscaste esto, no volvemos a pedirlo
+    const claveCache = `mood-vam:${busqueda}`;
+    try {
+      const guardado = sessionStorage.getItem(claveCache);
+      if (guardado) return mostrarResultado(JSON.parse(guardado));
+    } catch {
+      /* sessionStorage puede no estar disponible: seguimos sin cache */
+    }
+
+    // Si había un pedido anterior en curso, lo cancelamos
+    pedido?.abort();
+    const ctrl = new AbortController();
+    pedido = ctrl;
+    const temporizador = setTimeout(() => ctrl.abort("timeout"), LIMITE_MS);
+
+    mostrarCargando();
+
+    const params = new URLSearchParams({
+      q: busqueda,
+      images_exist: "1", // solo objetos con foto
+      page_size: "18",
+    });
+
+    try {
+      const res = await fetch(`${API}?${params}`, { signal: ctrl.signal });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      // Nos quedamos solo con las obras que tienen imagen
+      const obras = ((json.records ?? []) as RegistroVAM[])
+        .map(aObra)
+        .filter((o): o is Obra => o !== null)
+        .slice(0, 12);
+      try {
+        sessionStorage.setItem(claveCache, JSON.stringify(obras));
+      } catch {
+        /* sin cache, no pasa nada */
+      }
+      mostrarResultado(obras);
+    } catch (err) {
+      // Un pedido cancelado porque elegiste otro tema no es un error
+      if (ctrl.signal.aborted && ctrl.signal.reason !== "timeout") return;
+      const porTiempo = ctrl.signal.reason === "timeout";
+      estado.textContent = "";
+      mostrarAviso(
+        "Se trabó la imprenta",
+        porTiempo
+          ? "El museo está tardando demasiado en responder. Probá de nuevo en un ratito."
+          : "No pude traer las obras. Revisá tu conexión o probá de nuevo.",
+        true
+      );
+      console.warn("[moodboard]", err);
+    } finally {
+      clearTimeout(temporizador);
+    }
+  }
+
+  function mostrarResultado(obras: Obra[]) {
+    if (obras.length === 0) {
+      estado.textContent = "";
+      mostrarAviso(
+        "Página en blanco",
+        `No encontré obras con imagen para “${busquedaActual}”. Probá con otra palabra (en inglés funciona mejor).`,
+        false
+      );
+    } else {
+      mostrarObras(obras);
+    }
+  }
+
+  // ---------- Interacciones ----------
+  function elegirChip(chip: HTMLButtonElement | null) {
+    chips.forEach((c) => c.setAttribute("aria-pressed", String(c === chip)));
+  }
+
+  chips.forEach((chip) =>
+    chip.addEventListener("click", () => {
+      elegirChip(chip);
+      cargar(chip.dataset.busqueda!);
+    })
+  );
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const q = String(new FormData(form).get("q") ?? "").trim();
+    if (!q) return;
+    elegirChip(null);
+    cargar(q);
+  });
+
+  aviso.querySelector("[data-reintentar]")!.addEventListener("click", () => {
+    try {
+      sessionStorage.removeItem(`mood-vam:${busquedaActual}`);
+    } catch {}
+    cargar(busquedaActual);
+  });
+
+  // Recién pedimos a la API cuando el moodboard está por aparecer en pantalla
+  const alVer = new IntersectionObserver(
+    (entradas) => {
+      if (entradas.some((e) => e.isIntersecting)) {
+        alVer.disconnect();
+        cargar(busquedaActual);
+      }
+    },
+    { rootMargin: "400px 0px" }
+  );
+  alVer.observe(raiz);
+</script>

@@ -1,0 +1,521 @@
+---
+// Mesa de collage: quien visita arrastra stickers y obras del moodboard
+// y arma su propia página del fanzine.
+//
+// - Arrastre con inercia: al soltar, el sticker sigue un poco y frena (fricción).
+// - Inclinación según la velocidad, con un resorte que lo vuelve a su ángulo.
+// - Teclado: Tab para elegir sticker, flechas para moverlo (Shift = más rápido),
+//   Supr para quitar una obra pegada. Con teclado NO hay animación (es instantáneo).
+// - Se guarda en localStorage: si volvés, tu collage sigue ahí.
+
+interface Sticker {
+  id: string;
+  texto: string;
+  estilo: "rosa" | "azul" | "papel" | "tinta" | "estrella";
+  x: number; // posición inicial en % del ancho de la mesa
+  y: number; // posición inicial en % del alto
+  giro: number;
+}
+
+interface Props {
+  stickers: Sticker[];
+}
+
+const { stickers } = Astro.props;
+---
+
+<div class="mesa-envoltorio">
+  <div class="mesa__barra">
+    <p class="mesa__ayuda" id="mesa-ayuda">
+      Arrastrá los stickers. Con teclado: <kbd>Tab</kbd> para elegir y <kbd>←↑→↓</kbd> para mover.
+    </p>
+    <div class="mesa__acciones">
+      <button class="boton" type="button" data-mezclar>Mezclar</button>
+      <button class="boton" type="button" data-limpiar>Empezar de cero</button>
+    </div>
+  </div>
+
+  <div class="mesa" data-mesa aria-describedby="mesa-ayuda">
+    <p class="mesa__fondo mano" aria-hidden="true">tu página ✶</p>
+    {
+      stickers.map((s) => (
+        <div
+          class={`sticker sticker--${s.estilo}`}
+          data-sticker={s.id}
+          data-x={s.x}
+          data-y={s.y}
+          data-giro={s.giro}
+          tabindex="0"
+          role="button"
+          aria-roledescription="sticker arrastrable"
+          aria-label={`Sticker: ${s.texto}`}
+        >
+          {s.texto}
+        </div>
+      ))
+    }
+  </div>
+  <p class="sr-only" aria-live="polite" data-anuncio></p>
+</div>
+
+<style>
+  .mesa__barra {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin: 28px 0 16px;
+  }
+
+  .mesa__ayuda {
+    margin: 0;
+    font-size: 0.9375rem;
+    color: var(--tinta-suave);
+  }
+
+  kbd {
+    font: 500 0.8125rem var(--f-texto);
+    border: 1px solid var(--tinta-suave);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    padding: 1px 6px;
+  }
+
+  .mesa__acciones {
+    display: flex;
+    gap: 8px;
+  }
+
+  /* La mesa: una hoja de papel con renglones suaves */
+  .mesa {
+    position: relative;
+    height: clamp(460px, 70vh, 640px);
+    border: 1.5px solid var(--tinta);
+    background-color: var(--papel);
+    background-image: radial-gradient(color-mix(in srgb, var(--azul) 22%, transparent) 1px, transparent 1.4px);
+    background-size: 22px 22px;
+    overflow: hidden;
+    /* Para que en el celu arrastrar un sticker no scrollee la página (se aplica en .sticker) */
+    touch-action: pan-y;
+  }
+
+  .mesa__fondo {
+    position: absolute;
+    right: 20px;
+    bottom: 12px;
+    margin: 0;
+    font-size: 1.75rem;
+    color: var(--tinta-suave);
+    opacity: 0.6;
+  }
+
+  .sticker {
+    position: absolute;
+    left: 0;
+    top: 0;
+    /* La posición la pone JS con transform (más performante que left/top) */
+    will-change: transform;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: none;
+    font-family: var(--f-display);
+    font-size: clamp(1.25rem, 3vw, 1.75rem);
+    line-height: 1;
+    padding: 12px 18px;
+    white-space: nowrap;
+    border-radius: 999px;
+  }
+
+  .sticker:focus-visible {
+    outline: 2px dashed var(--azul);
+    outline-offset: 4px;
+  }
+
+  .sticker[data-arrastrando] {
+    cursor: grabbing;
+    box-shadow: 6px 8px 0 color-mix(in srgb, var(--tinta) 18%, transparent);
+  }
+
+  .sticker--rosa {
+    background: var(--rosa);
+    color: var(--tinta);
+  }
+  .sticker--azul {
+    background: var(--azul);
+    color: var(--papel);
+  }
+  .sticker--papel {
+    background: var(--papel-2);
+    border: 1.5px solid var(--tinta);
+    border-radius: 2px;
+    font-family: var(--f-mano);
+  }
+  .sticker--tinta {
+    background: var(--tinta);
+    color: var(--rosa-claro);
+    font-style: italic;
+  }
+  .sticker--estrella {
+    background: none;
+    color: var(--rosa-texto);
+    font-size: clamp(3rem, 8vw, 4.5rem);
+    padding: 0 6px;
+  }
+
+  /* Obras que llegan desde el moodboard */
+  .mesa :global(.sticker--obra) {
+    padding: 6px 6px 22px;
+    border-radius: 0;
+    background: var(--papel);
+    border: 1.5px solid var(--tinta);
+    width: clamp(110px, 18vw, 170px);
+    white-space: normal;
+  }
+
+  .mesa :global(.sticker--obra img) {
+    width: 100%;
+    height: auto;
+    pointer-events: none;
+    -webkit-user-drag: none;
+  }
+
+  /* Cinta arriba de cada obra pegada */
+  .mesa :global(.sticker--obra::before) {
+    content: "";
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    width: 46px;
+    height: 16px;
+    translate: -50% 0;
+    rotate: -4deg;
+    background: var(--rosa-claro);
+    opacity: 0.85;
+  }
+</style>
+
+<script>
+  // ------------------------------------------------------------
+  // Física simple, sin librerías:
+  //   - Mientras arrastrás, el sticker sigue al dedo 1:1 (manipulación directa).
+  //   - Medimos la velocidad del puntero.
+  //   - Al soltar, seguimos moviendo con esa velocidad * fricción hasta que frena.
+  //   - El ángulo es un resorte: se inclina con la velocidad y vuelve a su giro base.
+  // ------------------------------------------------------------
+
+  const CLAVE = "mesa-collage-v1";
+  const FRICCION = 0.9; // cuanto más cerca de 1, más se desliza
+  const RIGIDEZ = 0.12; // resorte del ángulo
+  const AMORTIGUACION = 0.75;
+
+  interface Estado {
+    el: HTMLElement;
+    x: number; // px dentro de la mesa
+    y: number;
+    vx: number;
+    vy: number;
+    giro: number; // ángulo actual
+    giroBase: number;
+    vGiro: number;
+    arrastrando: boolean;
+  }
+
+  interface Guardado {
+    [id: string]: { x: number; y: number; giro: number; src?: string; titulo?: string };
+  }
+
+  const mesa = document.querySelector<HTMLElement>("[data-mesa]")!;
+  const anuncio = document.querySelector<HTMLElement>("[data-anuncio]")!;
+  const reducido = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const estados = new Map<HTMLElement, Estado>();
+  let zTope = 10;
+  let animando = false;
+
+  // ---------- Guardar / leer ----------
+  function leer(): Guardado {
+    try {
+      return JSON.parse(localStorage.getItem(CLAVE) ?? "{}");
+    } catch {
+      return {};
+    }
+  }
+
+  function guardar() {
+    const datos: Guardado = {};
+    const { width, height } = mesa.getBoundingClientRect();
+    estados.forEach((s) => {
+      const img = s.el.querySelector("img");
+      datos[s.el.dataset.sticker!] = {
+        // Guardamos en % para que funcione si cambia el tamaño de la pantalla
+        x: (s.x / width) * 100,
+        y: (s.y / height) * 100,
+        giro: s.giroBase,
+        ...(img ? { src: img.src, titulo: img.alt } : {}),
+      };
+    });
+    try {
+      localStorage.setItem(CLAVE, JSON.stringify(datos));
+    } catch {
+      /* modo privado o sin espacio: el collage funciona igual, solo no se guarda */
+    }
+  }
+
+  // ---------- Dibujar ----------
+  function pintar(s: Estado) {
+    s.el.style.transform = `translate(${s.x}px, ${s.y}px) rotate(${s.giro}deg) scale(${s.arrastrando ? 1.05 : 1})`;
+  }
+
+  // Mantiene el sticker adentro de la mesa
+  function limitar(s: Estado) {
+    const maxX = mesa.clientWidth - s.el.offsetWidth;
+    const maxY = mesa.clientHeight - s.el.offsetHeight;
+    if (s.x < 0) { s.x = 0; s.vx *= -0.4; }
+    if (s.y < 0) { s.y = 0; s.vy *= -0.4; }
+    if (s.x > maxX) { s.x = Math.max(0, maxX); s.vx *= -0.4; }
+    if (s.y > maxY) { s.y = Math.max(0, maxY); s.vy *= -0.4; }
+  }
+
+  // ---------- Bucle de animación (solo corre mientras algo se mueve) ----------
+  function paso() {
+    let algoSeMueve = false;
+
+    estados.forEach((s) => {
+      if (!s.arrastrando) {
+        s.x += s.vx;
+        s.y += s.vy;
+        s.vx *= FRICCION;
+        s.vy *= FRICCION;
+        if (Math.abs(s.vx) < 0.05) s.vx = 0;
+        if (Math.abs(s.vy) < 0.05) s.vy = 0;
+        limitar(s);
+      }
+
+      // Resorte del ángulo: objetivo = giro base + inclinación por velocidad
+      const objetivo = s.giroBase + Math.max(-14, Math.min(14, s.vx * 0.8));
+      s.vGiro = (s.vGiro + (objetivo - s.giro) * RIGIDEZ) * AMORTIGUACION;
+      s.giro += s.vGiro;
+
+      const quieto = s.vx === 0 && s.vy === 0 && Math.abs(s.vGiro) < 0.01 && Math.abs(objetivo - s.giro) < 0.05;
+      if (!quieto || s.arrastrando) algoSeMueve = true;
+      pintar(s);
+    });
+
+    if (algoSeMueve) requestAnimationFrame(paso);
+    else {
+      animando = false;
+      guardar();
+    }
+  }
+
+  function arrancar() {
+    if (animando) return;
+    animando = true;
+    requestAnimationFrame(paso);
+  }
+
+  // ---------- Arrastre con puntero (mouse, dedo o lápiz) ----------
+  function activar(el: HTMLElement, x: number, y: number, giro: number) {
+    const s: Estado = { el, x, y, vx: 0, vy: 0, giro, giroBase: giro, vGiro: 0, arrastrando: false };
+    estados.set(el, s);
+    pintar(s);
+
+    let inicioX = 0;
+    let inicioY = 0;
+    let ultimoX = 0;
+    let ultimoY = 0;
+    let ultimoT = 0;
+    let punteroId: number | null = null;
+
+    el.addEventListener("pointerdown", (e) => {
+      // Si ya hay un dedo arrastrando, ignoramos el segundo (evita saltos)
+      if (punteroId !== null) return;
+      punteroId = e.pointerId;
+      el.setPointerCapture(e.pointerId);
+      s.arrastrando = true;
+      s.vx = s.vy = 0;
+      el.dataset.arrastrando = "";
+      el.style.zIndex = String(++zTope);
+      inicioX = e.clientX - s.x;
+      inicioY = e.clientY - s.y;
+      ultimoX = e.clientX;
+      ultimoY = e.clientY;
+      ultimoT = performance.now();
+      arrancar();
+    });
+
+    el.addEventListener("pointermove", (e) => {
+      if (e.pointerId !== punteroId) return;
+      const ahora = performance.now();
+      const dt = Math.max(1, ahora - ultimoT);
+      // Velocidad en px por cuadro (~16 ms), suavizada
+      s.vx = s.vx * 0.5 + ((e.clientX - ultimoX) / dt) * 16 * 0.5;
+      s.vy = s.vy * 0.5 + ((e.clientY - ultimoY) / dt) * 16 * 0.5;
+      ultimoX = e.clientX;
+      ultimoY = e.clientY;
+      ultimoT = ahora;
+      s.x = e.clientX - inicioX;
+      s.y = e.clientY - inicioY;
+      limitar(s);
+    });
+
+    const soltar = (e: PointerEvent) => {
+      if (e.pointerId !== punteroId) return;
+      punteroId = null;
+      s.arrastrando = false;
+      delete el.dataset.arrastrando;
+      // Si el puntero se quedó quieto antes de soltar, no hay inercia
+      if (performance.now() - ultimoT > 80 || reducido) s.vx = s.vy = 0;
+      // Guardamos ya (y otra vez cuando termine de deslizarse)
+      guardar();
+      arrancar();
+    };
+    el.addEventListener("pointerup", soltar);
+    el.addEventListener("pointercancel", soltar);
+
+    // ---------- Teclado (sin animación: respuesta instantánea) ----------
+    el.addEventListener("keydown", (e) => {
+      const paso = e.shiftKey ? 40 : 10;
+      const movs: Record<string, [number, number]> = {
+        ArrowLeft: [-paso, 0],
+        ArrowRight: [paso, 0],
+        ArrowUp: [0, -paso],
+        ArrowDown: [0, paso],
+      };
+      if (movs[e.key]) {
+        e.preventDefault();
+        s.x += movs[e.key][0];
+        s.y += movs[e.key][1];
+        s.vx = s.vy = 0;
+        limitar(s);
+        el.style.zIndex = String(++zTope);
+        pintar(s);
+        guardar();
+      } else if ((e.key === "Delete" || e.key === "Backspace") && el.classList.contains("sticker--obra")) {
+        e.preventDefault();
+        quitar(el);
+      }
+    });
+  }
+
+  function quitar(el: HTMLElement) {
+    estados.delete(el);
+    el.remove();
+    anuncio.textContent = "Obra quitada de la mesa.";
+    guardar();
+  }
+
+  // ---------- Obras que llegan desde el moodboard ----------
+  function crearObra(id: string, src: string, titulo: string): HTMLElement {
+    const el = document.createElement("div");
+    el.className = "sticker sticker--obra";
+    el.dataset.sticker = id;
+    el.tabIndex = 0;
+    el.setAttribute("role", "button");
+    el.setAttribute("aria-roledescription", "sticker arrastrable");
+    el.setAttribute("aria-label", `Obra: ${titulo}. Supr para quitarla.`);
+    const img = document.createElement("img");
+    img.src = src;
+    img.alt = titulo;
+    img.draggable = false;
+    el.append(img);
+    mesa.append(el);
+    return el;
+  }
+
+  window.addEventListener("mesa:pegar", (e) => {
+    const { id, src, titulo } = (e as CustomEvent).detail;
+    const existente = mesa.querySelector<HTMLElement>(`[data-sticker="${id}"]`);
+    if (existente) {
+      // Ya estaba pegada: la traemos al frente
+      existente.style.zIndex = String(++zTope);
+      return;
+    }
+    const el = crearObra(id, src, titulo);
+    const ancho = mesa.clientWidth;
+    // Cae en un lugar al azar de la mitad superior, con un pequeño "tiro"
+    activar(el, ancho * (0.15 + Math.random() * 0.5), 20 + Math.random() * 80, -8 + Math.random() * 16);
+    const s = estados.get(el)!;
+    el.style.zIndex = String(++zTope);
+    if (!reducido) {
+      s.vy = 6;
+      s.vGiro = 3;
+    }
+    anuncio.textContent = `“${titulo}” pegada en la mesa.`;
+    guardar();
+    arrancar();
+  });
+
+  // ---------- Botones ----------
+  document.querySelector("[data-mezclar]")!.addEventListener("click", () => {
+    estados.forEach((s) => {
+      s.giroBase = -12 + Math.random() * 24;
+      if (reducido) {
+        s.x = Math.random() * (mesa.clientWidth - s.el.offsetWidth);
+        s.y = Math.random() * (mesa.clientHeight - s.el.offsetHeight);
+        s.giro = s.giroBase;
+      } else {
+        // Un "soplido" en dirección al azar: la física hace el resto
+        s.vx = (Math.random() - 0.5) * 50;
+        s.vy = (Math.random() - 0.5) * 50;
+      }
+    });
+    anuncio.textContent = "Stickers mezclados.";
+    arrancar();
+  });
+
+  document.querySelector("[data-limpiar]")!.addEventListener("click", () => {
+    try {
+      localStorage.removeItem(CLAVE);
+    } catch {}
+    mesa.querySelectorAll<HTMLElement>(".sticker--obra").forEach((el) => {
+      estados.delete(el);
+      el.remove();
+    });
+    // Los stickers originales vuelven a su lugar de fábrica
+    const { width, height } = mesa.getBoundingClientRect();
+    estados.forEach((s) => {
+      s.x = (Number(s.el.dataset.x) / 100) * width;
+      s.y = (Number(s.el.dataset.y) / 100) * height;
+      s.giro = s.giroBase = Number(s.el.dataset.giro);
+      s.vx = s.vy = s.vGiro = 0;
+      limitar(s);
+      pintar(s);
+    });
+    anuncio.textContent = "Mesa reiniciada.";
+  });
+
+  // ---------- Arranque ----------
+  function iniciarStickers(guardado: Guardado) {
+    const { width, height } = mesa.getBoundingClientRect();
+    mesa.querySelectorAll<HTMLElement>("[data-sticker]:not(.sticker--obra)").forEach((el) => {
+      const g = guardado[el.dataset.sticker!];
+      const x = ((g?.x ?? Number(el.dataset.x)) / 100) * width;
+      const y = ((g?.y ?? Number(el.dataset.y)) / 100) * height;
+      const giro = g?.giro ?? Number(el.dataset.giro);
+      activar(el, x, y, giro);
+      limitar(estados.get(el)!);
+      pintar(estados.get(el)!);
+    });
+  }
+
+  const guardado = leer();
+  iniciarStickers(guardado);
+
+  // Restaurar obras que habías pegado en otra visita
+  Object.entries(guardado).forEach(([id, g]) => {
+    if (!g.src) return;
+    const el = crearObra(id, g.src, g.titulo ?? "Obra");
+    activar(el, (g.x / 100) * mesa.clientWidth, (g.y / 100) * mesa.clientHeight, g.giro);
+  });
+
+  // Si cambia el tamaño de la pantalla, reacomodamos para que nada quede afuera
+  new ResizeObserver(() => {
+    estados.forEach((s) => {
+      limitar(s);
+      pintar(s);
+    });
+  }).observe(mesa);
+</script>

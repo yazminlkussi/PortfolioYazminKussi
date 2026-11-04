@@ -1,0 +1,254 @@
+---
+// Página principal: el fanzine completo, una "página" debajo de la otra.
+import Base from "../layouts/Base.astro";
+import Indice from "../components/Indice.astro";
+import Portada from "../components/Portada.astro";
+import TarjetaProyecto from "../components/TarjetaProyecto.astro";
+import Moodboard from "../components/Moodboard.astro";
+import MesaDeCollage from "../components/MesaDeCollage.astro";
+import { proyectos } from "../data/proyectos";
+
+const paginas = [
+  { id: "hola", num: "01", nombre: "hola" },
+  { id: "yo", num: "02", nombre: "yo" },
+  { id: "trabajos", num: "03", nombre: "trabajos" },
+  { id: "inspo", num: "04", nombre: "inspo" },
+  { id: "mesa", num: "05", nombre: "mesa" },
+  { id: "chau", num: "06", nombre: "chau" },
+];
+
+const intereses = ["diseño visual", "código", "foto y video", "música", "cine", "arte", "lectura"];
+
+const temasMoodboard = [
+  { etiqueta: "collage", busqueda: "collage" },
+  { etiqueta: "afiches", busqueda: "poster" },
+  { etiqueta: "rosa", busqueda: "pink" },
+  { etiqueta: "azul", busqueda: "blue" },
+  { etiqueta: "fotografía", busqueda: "photograph" },
+  { etiqueta: "flores", busqueda: "flowers" },
+];
+
+const stickers = [
+  { id: "hola", texto: "¡hola!", estilo: "rosa", x: 6, y: 10, giro: -8 },
+  { id: "estrella", texto: "★", estilo: "estrella", x: 78, y: 6, giro: 12 },
+  { id: "multimedia", texto: "multimedia", estilo: "azul", x: 48, y: 30, giro: 4 },
+  { id: "nota", texto: "me río mucho :)", estilo: "papel", x: 10, y: 58, giro: -4 },
+  { id: "cine", texto: "cine", estilo: "tinta", x: 66, y: 64, giro: -10 },
+  { id: "musica", texto: "♪ música", estilo: "rosa", x: 34, y: 78, giro: 6 },
+  { id: "codigo", texto: "</código>", estilo: "papel", x: 70, y: 40, giro: 8 },
+] as const;
+---
+
+<Base>
+  <Indice paginas={paginas} />
+
+  <main id="contenido" class="principal">
+    <div class="contenedor">
+      <Portada
+        nombre="Yazmin Kussi"
+        bajada="Diseño, programo y hago imágenes. Me interesan las experiencias que se sienten hechas a mano, aunque sean digitales."
+      />
+    </div>
+
+    <!-- 02 · Sobre mí -->
+    <section class="pagina" id="yo" aria-labelledby="yo-titulo">
+      <div class="contenedor yo">
+        <div>
+          <p class="pagina__num">02 — sobre mí</p>
+          <h2 class="pagina__titulo" id="yo-titulo">Risueña, curiosa <em>y un poco ruidosa</em></h2>
+        </div>
+        <div class="yo__texto">
+          <p>
+            Estudio multimedia y me muevo entre el diseño visual, la programación y la imagen. Me gusta que las cosas
+            se vean lindas, pero sobre todo que se sientan bien al usarlas: que respondan, que sorprendan un poquito y
+            que tengan algo de quien las hizo.
+          </p>
+          <p>
+            Fuera de la pantalla, vivo con música de fondo, junto referencias de cine y de arte, y leo. De ahí sale casi
+            todo lo que diseño: este portfolio es un fanzine porque así guardo las cosas que me gustan, recortadas y
+            pegadas.
+          </p>
+          <ul class="yo__intereses" aria-label="Intereses">
+            {intereses.map((i) => <li>{i}</li>)}
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 03 · Proyectos -->
+    <section class="pagina pagina--tinta" id="trabajos" aria-labelledby="trabajos-titulo">
+      <div class="contenedor">
+        <p class="pagina__num">03 — trabajos</p>
+        <h2 class="pagina__titulo" id="trabajos-titulo">Cosas que <em>hice</em></h2>
+        <p class="pagina__bajada">Tocá un recorte para abrir su ficha.</p>
+
+        <div class="grilla-proyectos">
+          {proyectos.map((p, i) => <TarjetaProyecto proyecto={p} indice={i} />)}
+          <div class="proximo" aria-label="Próximo proyecto, en proceso">
+            <p class="mano">este espacio está esperando el próximo recorte…</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 04 · Moodboard -->
+    <section class="pagina" id="inspo" aria-labelledby="inspo-titulo">
+      <div class="contenedor">
+        <p class="pagina__num">04 — inspo</p>
+        <h2 class="pagina__titulo" id="inspo-titulo">Lo que me <em>inspira</em></h2>
+        <p class="pagina__bajada">
+          Un moodboard vivo con obras de un museo de verdad. Elegí un tema o buscá algo, y pegá en la mesa lo que te
+          guste.
+        </p>
+        <Moodboard temas={temasMoodboard} />
+      </div>
+    </section>
+
+    <!-- 05 · Mesa de collage -->
+    <section class="pagina pagina--tinta" id="mesa" aria-labelledby="mesa-titulo">
+      <div class="contenedor">
+        <p class="pagina__num">05 — mesa</p>
+        <h2 class="pagina__titulo" id="mesa-titulo">Armá tu <em>página</em></h2>
+        <p class="pagina__bajada">
+          Así trabajo yo: probando, moviendo y volviendo a pegar. Ahora te toca a vos. Tu collage queda guardado en este
+          navegador.
+        </p>
+        <MesaDeCollage stickers={[...stickers]} />
+      </div>
+    </section>
+
+    <!-- 06 · Contraportada -->
+    <footer class="pagina contra" id="chau" aria-labelledby="chau-titulo">
+      <div class="contenedor">
+        <p class="pagina__num">06 — contraportada</p>
+        <h2 class="pagina__titulo contra__titulo" id="chau-titulo">¿Hacemos algo <em>juntxs?</em></h2>
+        <ul class="contra__links">
+          <li><a class="boton boton--lleno" href="mailto:hola@ejemplo.com">Escribime</a></li>
+          <li><a class="boton" href="https://www.instagram.com/" target="_blank" rel="noopener">Instagram ↗</a></li>
+          <li><a class="boton" href="https://www.linkedin.com/" target="_blank" rel="noopener">LinkedIn ↗</a></li>
+          <li><a class="boton" href="https://github.com/" target="_blank" rel="noopener">GitHub ↗</a></li>
+        </ul>
+        <p class="contra__firma">
+          <span class="mano">hecho a mano (y con código) por Yazmin Kussi ✿</span>
+          <span>Fanzine N°1 · 2026 · Programación Multimedial IV</span>
+        </p>
+      </div>
+    </footer>
+  </main>
+</Base>
+
+<style>
+  /* Lugar para el índice: abajo en celular, a la izquierda en escritorio */
+  .principal {
+    padding-bottom: 72px;
+  }
+
+  @media (min-width: 1024px) {
+    .principal {
+      padding-bottom: 0;
+      padding-left: 168px;
+    }
+  }
+
+  /* Páginas alternadas con una tinta azul muy suave */
+  .pagina--tinta {
+    background: color-mix(in srgb, var(--azul-claro) 40%, var(--papel));
+    border-block: 1.5px solid var(--tinta);
+  }
+
+  /* ---------- Sobre mí ---------- */
+  .yo {
+    display: grid;
+    gap: 32px;
+  }
+
+  @media (min-width: 860px) {
+    .yo {
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      align-items: start;
+    }
+  }
+
+  .yo__texto p {
+    margin: 0 0 18px;
+    font-size: 1.125rem;
+  }
+
+  .yo__intereses {
+    list-style: none;
+    padding: 0;
+    margin: 24px 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .yo__intereses li {
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1.5px solid var(--tinta);
+    font-size: 0.9375rem;
+  }
+
+  .yo__intereses li:nth-child(3n + 1) {
+    background: var(--rosa-claro);
+  }
+  .yo__intereses li:nth-child(3n + 2) {
+    background: var(--azul-claro);
+  }
+
+  /* ---------- Proyectos ---------- */
+  .grilla-proyectos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+    gap: clamp(32px, 5vw, 56px) clamp(24px, 4vw, 40px);
+    margin-top: 48px;
+  }
+
+  .proximo {
+    display: grid;
+    place-items: center;
+    min-height: 260px;
+    border: 1.5px dashed var(--tinta-suave);
+    padding: 24px;
+    text-align: center;
+    rotate: 1.5deg;
+  }
+
+  .proximo p {
+    margin: 0;
+    font-size: 1.625rem;
+    color: var(--tinta-suave);
+    max-width: 16ch;
+  }
+
+  /* ---------- Contraportada ---------- */
+  .contra__titulo {
+    font-size: clamp(3rem, 9vw, 7rem);
+  }
+
+  .contra__links {
+    list-style: none;
+    padding: 0;
+    margin: 40px 0 64px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .contra__firma {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.875rem;
+    color: var(--tinta-suave);
+    border-top: 1.5px dashed var(--tinta-suave);
+    padding-top: 20px;
+  }
+
+  .contra__firma .mano {
+    font-size: 1.5rem;
+    color: var(--rosa-texto);
+  }
+</style>
