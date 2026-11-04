@@ -1,0 +1,56 @@
+---
+// Layout base: <head>, fuentes, estilos globales y el link "saltar al contenido".
+import "../styles/global.css";
+
+interface Props {
+  titulo?: string;
+  descripcion?: string;
+}
+
+const {
+  titulo = "Yazmin Kussi — fanzine portfolio",
+  descripcion = "Portfolio de Yazmin Kussi: diseño visual, código e imagen, armado como un fanzine risograph.",
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={descripcion} />
+    <meta name="theme-color" content="#f3eee4" />
+    <meta property="og:title" content={titulo} />
+    <meta property="og:description" content={descripcion} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Caveat:wght@500&family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500&display=swap"
+    />
+    <title>{titulo}</title>
+  </head>
+  <body>
+    <a class="saltar" href="#contenido">Saltar al contenido</a>
+    <slot />
+  </body>
+</html>
+
+<style>
+  .saltar {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 200;
+    background: var(--tinta);
+    color: var(--papel);
+    padding: 10px 16px;
+    border-radius: 999px;
+    transform: translateY(-150%);
+    transition: transform 200ms var(--ease-out);
+  }
+  .saltar:focus-visible {
+    transform: translateY(0);
+  }
+</style>
