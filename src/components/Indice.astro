@@ -1,0 +1,173 @@
+---
+// Índice del fanzine: la navegación del sitio.
+// - En escritorio es una columna fija a la izquierda; en celular, una barra abajo.
+// - Marca qué "página" estás leyendo (scroll-spy con IntersectionObserver).
+
+interface Pagina {
+  id: string;
+  num: string;
+  nombre: string;
+}
+
+interface Props {
+  paginas: Pagina[];
+}
+
+const { paginas } = Astro.props;
+---
+
+<nav class="indice" aria-label="Índice del fanzine">
+  <p class="indice__marca mano" aria-hidden="true">yk ✿</p>
+  <ol class="indice__lista">
+    {
+      paginas.map((p) => (
+        <li>
+          <a class="indice__link" href={`#${p.id}`} data-pagina={p.id}>
+            <span class="indice__num">{p.num}</span>
+            <span class="indice__nombre">{p.nombre}</span>
+          </a>
+        </li>
+      ))
+    }
+  </ol>
+</nav>
+
+<style>
+  .indice {
+    position: fixed;
+    z-index: 50;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: color-mix(in srgb, var(--papel) 92%, transparent);
+    border-top: 1.5px solid var(--tinta);
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  }
+
+  .indice__marca {
+    display: none;
+  }
+
+  .indice__lista {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: space-between;
+    gap: 2px;
+  }
+
+  .indice__link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    min-width: 44px;
+    min-height: 44px;
+    justify-content: center;
+    padding: 4px 6px;
+    text-decoration: none;
+    border-radius: 999px;
+    color: var(--tinta-suave);
+    transition: color 160ms ease, background-color 160ms ease;
+  }
+
+  .indice__num {
+    font-size: 0.6875rem;
+    letter-spacing: 0.08em;
+  }
+
+  .indice__nombre {
+    font-family: var(--f-display);
+    font-size: 1.0625rem;
+    line-height: 1.1;
+  }
+
+  /* Página activa: se "entinta" en rosa */
+  .indice__link[aria-current="true"] {
+    color: var(--tinta);
+    background: var(--rosa-claro);
+  }
+
+  @media (max-width: 420px) {
+    .indice__nombre {
+      font-size: 0.9375rem;
+    }
+  }
+
+  /* Escritorio: columna vertical fija a la izquierda */
+  @media (min-width: 1024px) {
+    .indice {
+      top: 0;
+      right: auto;
+      bottom: 0;
+      width: 168px;
+      border-top: 0;
+      border-right: 1.5px solid var(--tinta);
+      background: var(--papel);
+      padding: 28px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    .indice__marca {
+      display: block;
+      margin: 0;
+      font-size: 1.75rem;
+      color: var(--rosa-texto);
+      transform: rotate(-6deg);
+    }
+
+    .indice__lista {
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .indice__link {
+      flex-direction: row;
+      align-items: baseline;
+      justify-content: flex-start;
+      gap: 10px;
+      padding: 6px 12px;
+    }
+
+    .indice__nombre {
+      font-size: 1.25rem;
+    }
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .indice__link:hover {
+      color: var(--tinta);
+    }
+  }
+</style>
+
+<script>
+  // Scroll-spy: cuando una sección ocupa el centro de la pantalla,
+  // su link en el índice queda marcado con aria-current.
+  const links = [...document.querySelectorAll<HTMLAnchorElement>(".indice__link")];
+  const secciones = links
+    .map((l) => document.getElementById(l.dataset.pagina ?? ""))
+    .filter((s): s is HTMLElement => s !== null);
+
+  function marcar(id: string) {
+    links.forEach((l) => {
+      if (l.dataset.pagina === id) l.setAttribute("aria-current", "true");
+      else l.removeAttribute("aria-current");
+    });
+  }
+
+  const observador = new IntersectionObserver(
+    (entradas) => {
+      entradas.forEach((e) => {
+        if (e.isIntersecting) marcar(e.target.id);
+      });
+    },
+    // Una franja fina en el medio de la pantalla decide cuál es la activa
+    { rootMargin: "-45% 0px -50% 0px" }
+  );
+
+  secciones.forEach((s) => observador.observe(s));
+</script>

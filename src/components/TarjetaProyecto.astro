@@ -1,0 +1,410 @@
+---
+// Un proyecto como "recorte" pegado en la página.
+// Al tocarlo se abre una ficha (<dialog> nativo) con el detalle.
+// <dialog> ya resuelve: foco atrapado adentro, cierre con Esc y volver el foco al botón.
+import type { Proyecto } from "../data/proyectos";
+
+interface Props {
+  proyecto: Proyecto;
+  indice: number;
+}
+
+const { proyecto, indice } = Astro.props;
+const idDialogo = `ficha-${proyecto.slug}`;
+// Cada recorte queda pegado con una inclinación distinta
+const inclinaciones = [-2.2, 1.6, -1.2, 2.4];
+const giro = inclinaciones[indice % inclinaciones.length];
+---
+
+<article class="tarjeta" style={`--giro: ${giro}deg`}>
+  <button
+    class="tarjeta__boton"
+    type="button"
+    data-abre={idDialogo}
+    aria-haspopup="dialog"
+  >
+    <div class={`tapa tapa--${proyecto.portada}`} aria-hidden="true">
+      {
+        proyecto.imagen ? (
+          <img src={proyecto.imagen} alt="" loading="lazy" />
+        ) : proyecto.portada === "nodo" ? (
+          <>
+            <span class="nodo n1" />
+            <span class="nodo n2" />
+            <span class="nodo n3" />
+            <span class="nodo n4" />
+            <span class="linea l1" />
+            <span class="linea l2" />
+          </>
+        ) : proyecto.portada === "karaoke" ? (
+          <>
+            <span class="k-estrella">★</span>
+            <span class="k-letra">la la la</span>
+            <span class="k-halftone" />
+          </>
+        ) : (
+          <>
+            <span class="m-monograma">D</span>
+            <span class="m-filete" />
+            <span class="m-texto">maison · 2026</span>
+          </>
+        )
+      }
+    </div>
+    <div class="tarjeta__info">
+      <p class="tarjeta__tipo">{proyecto.tipo} · {proyecto.anio}</p>
+      <h3 class="tarjeta__titulo">{proyecto.titulo}</h3>
+      <p class="tarjeta__resumen">{proyecto.resumen}</p>
+      <span class="tarjeta__ver">Ver ficha →</span>
+    </div>
+  </button>
+  {proyecto.nota && <p class="tarjeta__nota mano" aria-hidden="true">{proyecto.nota}</p>}
+</article>
+
+<dialog class="ficha" id={idDialogo} aria-labelledby={`${idDialogo}-titulo`}>
+  <div class="ficha__hoja">
+    <button class="ficha__cerrar" type="button" data-cierra aria-label="Cerrar ficha">✕</button>
+    <p class="ficha__tipo">{proyecto.tipo} · {proyecto.anio}</p>
+    <h3 class="ficha__titulo" id={`${idDialogo}-titulo`}>{proyecto.titulo}</h3>
+    {proyecto.descripcion.map((parrafo) => <p>{parrafo}</p>)}
+    <dl class="ficha__datos">
+      <div>
+        <dt>Mi rol</dt>
+        <dd>{proyecto.rol}</dd>
+      </div>
+      {
+        proyecto.equipo && (
+          <div>
+            <dt>Equipo</dt>
+            <dd>{proyecto.equipo}</dd>
+          </div>
+        )
+      }
+      <div>
+        <dt>Herramientas</dt>
+        <dd>
+          <ul class="ficha__etiquetas">
+            {proyecto.herramientas.map((h) => <li>{h}</li>)}
+          </ul>
+        </dd>
+      </div>
+    </dl>
+    {
+      proyecto.enlaces && (
+        <p class="ficha__enlaces">
+          {proyecto.enlaces.map((e) => (
+            <a class="boton" href={e.url} target="_blank" rel="noopener">
+              {e.texto} ↗
+            </a>
+          ))}
+        </p>
+      )
+    }
+  </div>
+</dialog>
+
+<style>
+  .tarjeta {
+    position: relative;
+    rotate: var(--giro);
+  }
+
+  .tarjeta__boton {
+    all: unset;
+    box-sizing: border-box;
+    display: block;
+    width: 100%;
+    cursor: pointer;
+    background: var(--papel);
+    border: 1.5px solid var(--tinta);
+    padding: 12px 12px 20px;
+    /* Sombra plana corrida, como una segunda pasada de tinta */
+    box-shadow: 6px 6px 0 var(--azul-claro);
+    transition: transform 220ms var(--ease-out), box-shadow 220ms var(--ease-out);
+  }
+
+  .tarjeta__boton:focus-visible {
+    outline: 2px solid var(--azul);
+    outline-offset: 4px;
+  }
+
+  .tarjeta__boton:active {
+    transform: scale(0.98);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .tarjeta__boton:hover {
+      transform: translate(-3px, -3px);
+      box-shadow: 9px 9px 0 var(--rosa-claro);
+    }
+  }
+
+  .tarjeta__info {
+    padding: 16px 6px 0;
+  }
+
+  .tarjeta__tipo {
+    font-size: 0.8125rem;
+    letter-spacing: 0.06em;
+    color: var(--tinta-suave);
+    margin: 0 0 6px;
+  }
+
+  .tarjeta__titulo {
+    font-size: 2.25rem;
+  }
+
+  .tarjeta__resumen {
+    margin: 10px 0 14px;
+    color: var(--tinta-suave);
+  }
+
+  .tarjeta__ver {
+    font-weight: 500;
+    color: var(--rosa-texto);
+  }
+
+  .tarjeta__nota {
+    position: absolute;
+    top: -18px;
+    right: 8px;
+    margin: 0;
+    font-size: 1.375rem;
+    color: var(--rosa-texto);
+    background: var(--papel);
+    padding: 0 8px;
+    rotate: 4deg;
+    pointer-events: none;
+  }
+
+  /* ---------- Tapas riso (se reemplazan por una imagen si hay) ---------- */
+  .tapa {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    background: var(--papel-2);
+  }
+
+  .tapa img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .tapa span {
+    position: absolute;
+  }
+
+  /* Nodo: una red de puntos que se conectan */
+  .tapa--nodo .nodo {
+    border-radius: 50%;
+    mix-blend-mode: multiply;
+  }
+  .n1 { width: 38%; aspect-ratio: 1; left: 10%; top: 14%; background: var(--azul); }
+  .n2 { width: 30%; aspect-ratio: 1; left: 40%; top: 36%; background: var(--rosa); }
+  .n3 { width: 16%; aspect-ratio: 1; right: 10%; top: 12%; background: var(--azul); }
+  .n4 { width: 12%; aspect-ratio: 1; right: 22%; bottom: 10%; background: var(--rosa); }
+  .tapa--nodo .linea { height: 1.5px; background: var(--tinta); transform-origin: left; }
+  .l1 { width: 48%; left: 28%; top: 30%; rotate: -14deg; }
+  .l2 { width: 34%; left: 56%; top: 62%; rotate: 32deg; }
+
+  /* Karaoke: estrella magenta + "letra" + halftone */
+  .tapa--karaoke { background: var(--papel); }
+  .k-estrella {
+    font-size: clamp(6rem, 18vw, 9rem);
+    line-height: 1;
+    color: var(--rosa);
+    right: 6%;
+    top: 4%;
+    rotate: -10deg;
+  }
+  .k-letra {
+    left: 8%;
+    bottom: 10%;
+    font-family: var(--f-display);
+    font-size: clamp(2.25rem, 6vw, 3.25rem);
+    font-style: italic;
+    color: var(--tinta);
+  }
+  .k-halftone {
+    inset: 0 55% 40% 0;
+    background-image: radial-gradient(var(--azul) 28%, transparent 30%);
+    background-size: 10px 10px;
+    opacity: 0.55;
+  }
+
+  /* Rediseño de marca: sobrio y "caro" */
+  .tapa--marca { background: var(--tinta); }
+  .m-monograma {
+    inset: 0;
+    display: grid;
+    place-items: center;
+    font-family: var(--f-display);
+    font-style: italic;
+    font-size: clamp(5rem, 16vw, 8rem);
+    color: var(--rosa-claro);
+  }
+  .m-filete {
+    left: 12%;
+    right: 12%;
+    bottom: 22%;
+    height: 1px;
+    background: var(--rosa-claro);
+    opacity: 0.6;
+  }
+  .m-texto {
+    left: 0;
+    right: 0;
+    bottom: 10%;
+    text-align: center;
+    font-size: 0.75rem;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--rosa-claro);
+  }
+
+  /* ---------- Ficha (modal) ----------
+     Los modales quedan centrados: entran con scale(0.96) + opacity, nunca desde 0. */
+  .ficha {
+    width: min(640px, calc(100vw - 32px));
+    max-height: calc(100svh - 48px);
+    padding: 0;
+    border: 1.5px solid var(--tinta);
+    background: var(--papel);
+    color: var(--tinta);
+    box-shadow: 10px 10px 0 var(--rosa-claro);
+    opacity: 0;
+    transform: scale(0.96);
+    transition:
+      opacity 200ms var(--ease-out),
+      transform 200ms var(--ease-out),
+      overlay 200ms allow-discrete,
+      display 200ms allow-discrete;
+  }
+
+  .ficha[open] {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  @starting-style {
+    .ficha[open] {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+  }
+
+  .ficha::backdrop {
+    background: color-mix(in srgb, var(--tinta) 45%, transparent);
+    opacity: 0;
+    transition: opacity 200ms ease, overlay 200ms allow-discrete, display 200ms allow-discrete;
+  }
+
+  .ficha[open]::backdrop {
+    opacity: 1;
+  }
+
+  @starting-style {
+    .ficha[open]::backdrop {
+      opacity: 0;
+    }
+  }
+
+  .ficha__hoja {
+    position: relative;
+    padding: clamp(24px, 5vw, 44px);
+  }
+
+  .ficha__cerrar {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1.5px solid var(--tinta);
+    background: var(--papel);
+    color: var(--tinta);
+    font-size: 1rem;
+    cursor: pointer;
+    transition: transform 160ms var(--ease-out);
+  }
+
+  .ficha__cerrar:active {
+    transform: scale(0.94);
+  }
+
+  .ficha__tipo {
+    font-size: 0.8125rem;
+    letter-spacing: 0.06em;
+    color: var(--tinta-suave);
+    margin: 0 0 8px;
+  }
+
+  .ficha__titulo {
+    font-size: clamp(2.25rem, 6vw, 3.25rem);
+    margin-bottom: 16px;
+    padding-right: 48px;
+  }
+
+  .ficha__datos {
+    display: grid;
+    gap: 14px;
+    margin: 28px 0 0;
+    padding-top: 20px;
+    border-top: 1.5px dashed var(--tinta-suave);
+  }
+
+  .ficha__datos dt {
+    font-size: 0.8125rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--tinta-suave);
+  }
+
+  .ficha__datos dd {
+    margin: 2px 0 0;
+  }
+
+  .ficha__etiquetas {
+    list-style: none;
+    padding: 0;
+    margin: 6px 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .ficha__etiquetas li {
+    font-size: 0.875rem;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: var(--azul-claro);
+    color: var(--tinta);
+  }
+
+  .ficha__enlaces {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 24px;
+  }
+</style>
+
+<script>
+  // Un solo script para todas las tarjetas (Astro lo incluye una vez).
+  // Abre la ficha correspondiente y la cierra con el botón o tocando el fondo.
+  document.querySelectorAll<HTMLButtonElement>("[data-abre]").forEach((boton) => {
+    const dialogo = document.getElementById(boton.dataset.abre ?? "") as HTMLDialogElement | null;
+    if (!dialogo) return;
+
+    boton.addEventListener("click", () => dialogo.showModal());
+
+    dialogo.querySelector("[data-cierra]")?.addEventListener("click", () => dialogo.close());
+
+    // Clic en el fondo oscuro (fuera de la hoja) = cerrar
+    dialogo.addEventListener("click", (e) => {
+      if (e.target === dialogo) dialogo.close();
+    });
+  });
+</script>
