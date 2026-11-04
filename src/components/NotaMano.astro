@@ -1,0 +1,64 @@
+---
+// Nota escrita a mano con una flechita dibujada.
+// `flecha` indica hacia dónde apunta.
+
+interface Props {
+  flecha?: "izquierda" | "derecha" | "abajo" | "ninguna";
+  giro?: number;
+  class?: string;
+}
+
+const { flecha = "izquierda", giro = -3, class: clase = "" } = Astro.props;
+---
+
+<p class:list={["nota mano", `nota--${flecha}`, clase]} style={`--giro: ${giro}deg`}>
+  {
+    flecha !== "ninguna" && (
+      <svg class="nota__flecha" viewBox="0 0 90 50" aria-hidden="true">
+        <path
+          d="M84 8c-10 2-22 4-30 12-6 6-2 14 5 12 8-2 6-14-4-16-14-3-30 8-44 22"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.4"
+          stroke-linecap="round"
+        />
+        <path d="M18 30l-7 9 11-1" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+    )
+  }
+  <span><slot /></span>
+</p>
+
+<style>
+  .nota {
+    margin: 0;
+    font-size: clamp(1.375rem, 2.6vw, 1.75rem);
+    color: var(--tinta);
+    rotate: var(--giro);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 16ch;
+  }
+
+  .nota__flecha {
+    width: 64px;
+    flex: none;
+  }
+
+  .nota--derecha {
+    flex-direction: row-reverse;
+  }
+  .nota--derecha .nota__flecha {
+    scale: -1 1;
+  }
+
+  .nota--abajo {
+    flex-direction: column-reverse;
+    align-items: flex-start;
+  }
+  .nota--abajo .nota__flecha {
+    rotate: -60deg;
+    width: 52px;
+  }
+</style>

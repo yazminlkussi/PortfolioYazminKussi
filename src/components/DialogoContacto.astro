@@ -1,0 +1,126 @@
+---
+// Contacto como un cuadro de diálogo de iOS ("Nuevo álbum" → "Nuevo proyecto").
+// Escribís tu idea y "Enviar" abre tu programa de mail con el texto ya cargado.
+// No hay servidor: usamos un link mailto:, así que no se guarda nada en ningún lado.
+
+interface Props {
+  email: string;
+}
+
+const { email } = Astro.props;
+---
+
+<form class="dialogo" data-contacto data-email={email}>
+  <div class="dialogo__cuerpo">
+    <p class="dialogo__titulo" id="dialogo-titulo">Nuevo proyecto</p>
+    <p class="dialogo__texto">Contame tu idea y la seguimos por mail.</p>
+    <label class="sr-only" for="idea">Tu idea</label>
+    <input id="idea" name="idea" type="text" placeholder="una web para mi banda ✿" autocomplete="off" maxlength="300" />
+    <p class="dialogo__error" data-error aria-live="polite"></p>
+  </div>
+  <div class="dialogo__botones">
+    <button type="reset">Borrar</button>
+    <button type="submit"><strong>Enviar</strong></button>
+  </div>
+</form>
+
+<style>
+  .dialogo {
+    width: min(100%, 320px);
+    border-radius: 16px;
+    background: color-mix(in srgb, #f2f2f2 92%, transparent);
+    box-shadow: var(--sombra-foto);
+    border: 1px solid var(--chrome-borde);
+    overflow: hidden;
+    text-align: center;
+  }
+
+  .dialogo__cuerpo {
+    padding: 20px 18px 16px;
+  }
+
+  .dialogo__titulo {
+    margin: 0;
+    font-weight: 500;
+    font-size: 1.0625rem;
+  }
+
+  .dialogo__texto {
+    margin: 4px 0 14px;
+    font-size: 0.875rem;
+    color: var(--tinta-suave);
+  }
+
+  .dialogo input {
+    width: 100%;
+    min-height: 40px;
+    font: 400 1rem var(--f-texto);
+    color: var(--tinta);
+    background: #fff;
+    border: 1px solid var(--chrome-borde);
+    border-radius: 8px;
+    padding: 0 12px;
+  }
+
+  .dialogo input:focus-visible {
+    outline: 2px solid var(--azul);
+    outline-offset: 0;
+  }
+
+  .dialogo__error {
+    min-height: 1.2em;
+    margin: 6px 0 0;
+    font-size: 0.8125rem;
+    color: #c4271b;
+  }
+
+  .dialogo__botones {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-top: 1px solid var(--chrome-borde);
+  }
+
+  .dialogo__botones button {
+    min-height: 48px;
+    border: 0;
+    background: transparent;
+    font: 400 1.0625rem var(--f-texto);
+    color: var(--azul-texto);
+    cursor: pointer;
+    transition: background-color 160ms ease;
+  }
+
+  .dialogo__botones button + button {
+    border-left: 1px solid var(--chrome-borde);
+  }
+
+  .dialogo__botones button strong {
+    font-weight: 500;
+  }
+
+  .dialogo__botones button:active {
+    background: rgb(0 0 0 / 0.06);
+  }
+</style>
+
+<script>
+  const form = document.querySelector<HTMLFormElement>("[data-contacto]")!;
+  const input = form.querySelector<HTMLInputElement>("input")!;
+  const error = form.querySelector<HTMLElement>("[data-error]")!;
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const idea = input.value.trim();
+    if (!idea) {
+      error.textContent = "Escribí aunque sea una palabra.";
+      input.focus();
+      return;
+    }
+    const asunto = encodeURIComponent("Nuevo proyecto ✿");
+    const cuerpo = encodeURIComponent(`Hola Yazmin! Tengo una idea: ${idea}`);
+    window.location.href = `mailto:${form.dataset.email}?subject=${asunto}&body=${cuerpo}`;
+  });
+
+  input.addEventListener("input", () => (error.textContent = ""));
+  form.addEventListener("reset", () => (error.textContent = ""));
+</script>

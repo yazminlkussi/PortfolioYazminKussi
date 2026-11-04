@@ -1,0 +1,75 @@
+---
+// Ventana tipo macOS que funciona como "marco de foto" del collage.
+// Pieza visual reutilizable: el contenido va en el <slot />.
+
+interface Props {
+  titulo: string; // nombre de archivo que aparece en la barra, ej. "nodo_final.jpg"
+  giro?: number; // inclinación en grados
+  class?: string;
+}
+
+const { titulo, giro = 0, class: clase = "" } = Astro.props;
+---
+
+<figure class:list={["ventana", clase]} style={`--giro: ${giro}deg`}>
+  <div class="ventana__barra" aria-hidden="true">
+    <span class="ventana__luces"><i></i><i></i><i></i></span>
+    <span class="ventana__titulo">{titulo}</span>
+  </div>
+  <div class="ventana__contenido">
+    <slot />
+  </div>
+</figure>
+
+<style>
+  .ventana {
+    margin: 0;
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: var(--sombra-foto);
+    border: 1px solid var(--chrome-borde);
+    rotate: var(--giro);
+  }
+
+  .ventana__barra {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 28px;
+    padding: 0 10px;
+    background: var(--chrome);
+    border-bottom: 1px solid var(--chrome-borde);
+  }
+
+  .ventana__luces {
+    display: flex;
+    gap: 6px;
+  }
+
+  .ventana__luces i {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #ff5f57;
+  }
+  .ventana__luces i:nth-child(2) {
+    background: #febc2e;
+  }
+  .ventana__luces i:nth-child(3) {
+    background: #28c840;
+  }
+
+  .ventana__titulo {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--tinta-suave);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .ventana__contenido {
+    position: relative;
+  }
+</style>

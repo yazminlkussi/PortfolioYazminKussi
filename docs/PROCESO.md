@@ -39,6 +39,34 @@ Decisiones que salieron de ahí:
 
 ✍️ _Bocetos, capturas o referencias (pegar acá o en `docs/img/`):_
 
+### Segunda iteración: del fanzine al cuaderno de escritorio
+
+Con la primera versión armada (fanzine risograph con scroll largo), sentí que le faltaba algo **más
+moderno** y más mío. Junté referencias:
+- un "recap" de proyectos con carpetas azules, fotos sueltas y un título con **cuadro de selección y
+  manijas**, como en un programa de diseño;
+- un **cuaderno anillado** con capturas en ventanas de macOS, un diálogo "Nuevo álbum" y **notas a mano
+  con flechitas**;
+- una hoja de **stickers de interfaz**: carpetas rosas, burbujas de mensaje, archivos, menús Copiar /
+  Compartir, interruptores y el cursor pixelado.
+
+Decisiones que tomé a partir de eso:
+- El portfolio pasa a ser un **cuaderno donde pasás las hojas**, y **cada hoja es un proyecto**.
+- Cambio de paleta: papel claro, negro, **rosa de carpeta** como acento y el azul de sistema para lo
+  accionable. Dejé las dos tintas riso.
+- Cambio de tipografía: **Inter Tight** fina y con poco espacio entre letras para los títulos (más
+  moderna) y **Gochi Hand** para las notas a mano.
+- Las capturas de proyectos van dentro de **ventanas de macOS** que hacen de marco de foto.
+- Los stickers de la mesa ahora son **stickers de interfaz** (carpeta, burbuja, archivo, menú, switch,
+  cursor).
+- Sumé el **interruptor formal / risueña** en "sobre mí": así el switch no es solo decorativo, sino que
+  cambia lo que leés.
+
+Lo que se mantuvo de la primera versión: la API del museo, los estados, la mesa con física y el criterio
+de animación.
+
+✍️ _Capturas antes / después:_
+
 ## 4. Cómo evolucionó la estructura
 
 1. Primero pensé en secciones clásicas: inicio, sobre mí, proyectos y contacto.
@@ -83,6 +111,16 @@ Seguí la filosofía de diseño de interfaces de Emil Kowalski:
 - **El collage no siempre se guardaba** en el navegador de pruebas, porque ahí las animaciones corrían
   muy lento y el guardado esperaba a que el sticker frenara. Ahora también guarda apenas lo soltás.
 
+- **(v2) Una hoja oculta se seguía viendo.** La hoja de contacto aparecía debajo de la tapa porque su
+  `display: flex` le ganaba al atributo `hidden`. Lo resolví con una regla `.hoja[hidden] { display: none !important }`.
+- **(v2) La mesa empezaba oculta y medía 0 px**, así que los stickers quedaban todos en la esquina. Ahora
+  la mesa se arma recién la primera vez que tiene tamaño (`ResizeObserver`). Si pegás una obra antes de
+  abrir la mesa, queda anotada en `localStorage` y aparece cuando llegás.
+- **(v2) Animaciones de hoja que se pisaban** si pasabas muy rápido. Guardo la animación en curso y,
+  si llega otra, la cancelo y dejo todo prolijo antes de empezar la nueva.
+- **(v2) En pantallas medianas la hoja de proyecto empezaba con un bloque de texto.** Reordené para que,
+  en una columna, abra con el collage visual.
+
 ✍️ _Otros problemas que encuentre:_
 
 ## 8. Pendiente / mejorable
@@ -104,7 +142,8 @@ Usé **Claude (Anthropic)** como asistente durante el proceso.
   encima del texto, eventos duplicados).
 
 **Decisiones que tomé yo:**
-- El concepto (fanzine / collage) y la estética (risograph suave).
+- El concepto (primero fanzine / collage, después cuaderno de escritorio) y la estética.
+- Las referencias visuales de la segunda versión (las busqué y se las pasé).
 - Qué proyectos mostrar y cómo describirlos (Nodo, Karaoke y el rediseño de Dunkin').
 - Que se sintiera estético y "colorido pero no tanto".
 - Aplicar la filosofía de diseño de Emil Kowalski.

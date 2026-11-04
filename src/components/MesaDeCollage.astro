@@ -1,6 +1,6 @@
 ---
 // Mesa de collage: quien visita arrastra stickers y obras del moodboard
-// y arma su propia página del fanzine.
+// y arma su propia página del cuaderno.
 //
 // - Arrastre con inercia: al soltar, el sticker sigue un poco y frena (fricción).
 // - Inclinación según la velocidad, con un resorte que lo vuelve a su ángulo.
@@ -8,10 +8,12 @@
 //   Supr para quitar una obra pegada. Con teclado NO hay animación (es instantáneo).
 // - Se guarda en localStorage: si volvés, tu collage sigue ahí.
 
+type Estilo = "carpeta" | "burbuja" | "archivo" | "menu" | "mano" | "toggle" | "cursor" | "estrella";
+
 interface Sticker {
   id: string;
   texto: string;
-  estilo: "rosa" | "azul" | "papel" | "tinta" | "estrella";
+  estilo: Estilo;
   x: number; // posición inicial en % del ancho de la mesa
   y: number; // posición inicial en % del alto
   giro: number;
@@ -22,6 +24,7 @@ interface Props {
 }
 
 const { stickers } = Astro.props;
+const nombreAccesible = (s: Sticker) => s.texto || s.estilo;
 ---
 
 <div class="mesa-envoltorio">
@@ -36,7 +39,7 @@ const { stickers } = Astro.props;
   </div>
 
   <div class="mesa" data-mesa aria-describedby="mesa-ayuda">
-    <p class="mesa__fondo mano" aria-hidden="true">tu página ✶</p>
+    <p class="mesa__fondo mano" aria-hidden="true">tu página ✦</p>
     {
       stickers.map((s) => (
         <div
@@ -48,9 +51,40 @@ const { stickers } = Astro.props;
           tabindex="0"
           role="button"
           aria-roledescription="sticker arrastrable"
-          aria-label={`Sticker: ${s.texto}`}
+          aria-label={`Sticker: ${nombreAccesible(s)}`}
         >
-          {s.texto}
+          {s.estilo === "carpeta" && (
+            <>
+              <svg viewBox="0 0 80 62" aria-hidden="true">
+                <path fill="#ff8db1" d="M4 6a5 5 0 0 1 5-5h20l6 7h36a5 5 0 0 1 5 5v42a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z" />
+                <path fill="#ffb8cf" d="M2 20a5 5 0 0 1 5-5h66a5 5 0 0 1 5 5v35a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5z" />
+              </svg>
+              <span>{s.texto}</span>
+            </>
+          )}
+          {s.estilo === "archivo" && (
+            <>
+              <span class="hoja-archivo" aria-hidden="true" />
+              <span>{s.texto}</span>
+            </>
+          )}
+          {s.estilo === "menu" && s.texto.split("|").map((t) => <span>{t.trim()}</span>)}
+          {s.estilo === "toggle" && (
+            <>
+              <span>{s.texto}</span>
+              <span class="mini-switch" aria-hidden="true" />
+            </>
+          )}
+          {s.estilo === "cursor" && (
+            <svg viewBox="0 0 12 19" aria-hidden="true" shape-rendering="crispEdges">
+              <path
+                fill="#fff"
+                stroke="#161616"
+                d="M.5.5v15h1v-1h1v-1h1v2h1v2h1v1h2v-1h1v-2h-1v-2h-1v-2h4v-1h-1v-1h-1v-1h-1v-1h-1v-1h-1v-1h-1v-1h-1v-1h-1v-1h-1v-1z"
+              />
+            </svg>
+          )}
+          {(s.estilo === "burbuja" || s.estilo === "mano" || s.estilo === "estrella") && s.texto}
         </div>
       ))
     }
@@ -76,9 +110,10 @@ const { stickers } = Astro.props;
 
   kbd {
     font: 500 0.8125rem var(--f-texto);
-    border: 1px solid var(--tinta-suave);
+    background: #fff;
+    border: 1px solid var(--chrome-borde);
     border-bottom-width: 2px;
-    border-radius: 4px;
+    border-radius: 5px;
     padding: 1px 6px;
   }
 
@@ -87,17 +122,18 @@ const { stickers } = Astro.props;
     gap: 8px;
   }
 
-  /* La mesa: una hoja de papel con renglones suaves */
+  /* La mesa: papel cuadriculado de cuaderno */
   .mesa {
     position: relative;
-    height: clamp(460px, 70vh, 640px);
-    border: 1.5px solid var(--tinta);
-    background-color: var(--papel);
-    background-image: radial-gradient(color-mix(in srgb, var(--azul) 22%, transparent) 1px, transparent 1.4px);
-    background-size: 22px 22px;
+    height: clamp(460px, 64vh, 600px);
+    border-radius: 12px;
+    background-color: #fff;
+    background-image:
+      linear-gradient(var(--linea) 1px, transparent 1px),
+      linear-gradient(90deg, var(--linea) 1px, transparent 1px);
+    background-size: 24px 24px;
+    box-shadow: inset 0 0 0 1px var(--chrome-borde);
     overflow: hidden;
-    /* Para que en el celu arrastrar un sticker no scrollee la página (se aplica en .sticker) */
-    touch-action: pan-y;
   }
 
   .mesa__fondo {
@@ -106,8 +142,7 @@ const { stickers } = Astro.props;
     bottom: 12px;
     margin: 0;
     font-size: 1.75rem;
-    color: var(--tinta-suave);
-    opacity: 0.6;
+    color: var(--gris);
   }
 
   .sticker {
@@ -121,56 +156,123 @@ const { stickers } = Astro.props;
     -webkit-user-select: none;
     -webkit-touch-callout: none;
     touch-action: none;
-    font-family: var(--f-display);
-    font-size: clamp(1.25rem, 3vw, 1.75rem);
-    line-height: 1;
-    padding: 12px 18px;
+    font-size: 0.9375rem;
+    line-height: 1.2;
     white-space: nowrap;
-    border-radius: 999px;
   }
 
   .sticker:focus-visible {
-    outline: 2px dashed var(--azul);
+    outline: 2px solid var(--azul);
     outline-offset: 4px;
   }
 
   .sticker[data-arrastrando] {
     cursor: grabbing;
-    box-shadow: 6px 8px 0 color-mix(in srgb, var(--tinta) 18%, transparent);
+    filter: drop-shadow(0 12px 14px rgb(0 0 0 / 0.18));
   }
 
-  .sticker--rosa {
-    background: var(--rosa);
-    color: var(--tinta);
+  /* --- Stickers de interfaz --- */
+  .sticker--carpeta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.8125rem;
+    font-weight: 500;
   }
-  .sticker--azul {
+  .sticker--carpeta svg {
+    width: 76px;
+  }
+
+  .sticker--burbuja {
     background: var(--azul);
-    color: var(--papel);
-  }
-  .sticker--papel {
-    background: var(--papel-2);
-    border: 1.5px solid var(--tinta);
-    border-radius: 2px;
-    font-family: var(--f-mano);
-  }
-  .sticker--tinta {
-    background: var(--tinta);
-    color: var(--rosa-claro);
-    font-style: italic;
-  }
-  .sticker--estrella {
-    background: none;
-    color: var(--rosa-texto);
-    font-size: clamp(3rem, 8vw, 4.5rem);
-    padding: 0 6px;
+    color: #fff;
+    padding: 9px 14px;
+    border-radius: 18px 18px 4px 18px;
+    font-size: 1rem;
   }
 
-  /* Obras que llegan desde el moodboard */
+  .sticker--archivo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    color: var(--tinta-suave);
+  }
+  .hoja-archivo {
+    width: 58px;
+    height: 74px;
+    background: #fff;
+    border: 1px solid var(--chrome-borde);
+    border-radius: 3px;
+    clip-path: polygon(0 0, 72% 0, 100% 22%, 100% 100%, 0 100%);
+  }
+
+  .sticker--menu {
+    display: flex;
+    background: #f4f4f4;
+    border: 1px solid var(--chrome-borde);
+    border-radius: 8px;
+    box-shadow: var(--sombra-foto);
+    overflow: hidden;
+  }
+  .sticker--menu span {
+    padding: 8px 14px;
+  }
+  .sticker--menu span + span {
+    border-left: 1px solid var(--chrome-borde);
+  }
+
+  .sticker--mano {
+    font-family: var(--f-mano);
+    font-size: 1.75rem;
+  }
+
+  .sticker--toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #fff;
+    border: 1px solid var(--chrome-borde);
+    border-radius: 12px;
+    padding: 8px 10px 8px 14px;
+    box-shadow: var(--sombra-foto);
+  }
+  .mini-switch {
+    position: relative;
+    width: 42px;
+    height: 26px;
+    border-radius: 999px;
+    background: var(--verde);
+  }
+  .mini-switch::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+  }
+
+  .sticker--cursor svg {
+    width: 34px;
+  }
+
+  .sticker--estrella {
+    font-size: 3.5rem;
+    line-height: 1;
+    color: var(--rosa-fuerte);
+  }
+
+  /* Obras que llegan desde el moodboard: foto con cinta */
   .mesa :global(.sticker--obra) {
-    padding: 6px 6px 22px;
-    border-radius: 0;
-    background: var(--papel);
-    border: 1.5px solid var(--tinta);
+    padding: 6px 6px 20px;
+    background: #fff;
+    box-shadow: var(--sombra-foto);
     width: clamp(110px, 18vw, 170px);
     white-space: normal;
   }
@@ -182,7 +284,6 @@ const { stickers } = Astro.props;
     -webkit-user-drag: none;
   }
 
-  /* Cinta arriba de cada obra pegada */
   .mesa :global(.sticker--obra::before) {
     content: "";
     position: absolute;
@@ -192,8 +293,8 @@ const { stickers } = Astro.props;
     height: 16px;
     translate: -50% 0;
     rotate: -4deg;
-    background: var(--rosa-claro);
-    opacity: 0.85;
+    background: var(--rosa);
+    opacity: 0.8;
   }
 </style>
 
@@ -206,7 +307,7 @@ const { stickers } = Astro.props;
   //   - El ángulo es un resorte: se inclina con la velocidad y vuelve a su giro base.
   // ------------------------------------------------------------
 
-  const CLAVE = "mesa-collage-v1";
+  const CLAVE = "mesa-collage-v2";
   const FRICCION = 0.9; // cuanto más cerca de 1, más se desliza
   const RIGIDEZ = 0.12; // resorte del ángulo
   const AMORTIGUACION = 0.75;
@@ -232,6 +333,7 @@ const { stickers } = Astro.props;
   const reducido = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const estados = new Map<HTMLElement, Estado>();
   let zTope = 10;
+  let lista = false; // ¿ya se armó la mesa?
   let animando = false;
 
   // ---------- Guardar / leer ----------
@@ -427,6 +529,18 @@ const { stickers } = Astro.props;
 
   window.addEventListener("mesa:pegar", (e) => {
     const { id, src, titulo } = (e as CustomEvent).detail;
+
+    // Si la mesa todavía no se abrió (su hoja está oculta), dejamos la obra
+    // anotada en el guardado y aparece cuando visites la mesa.
+    if (!lista) {
+      const datos = leer();
+      datos[id] = { x: 15 + Math.random() * 50, y: 4 + Math.random() * 20, giro: -8 + Math.random() * 16, src, titulo };
+      try {
+        localStorage.setItem(CLAVE, JSON.stringify(datos));
+      } catch {}
+      return;
+    }
+
     const existente = mesa.querySelector<HTMLElement>(`[data-sticker="${id}"]`);
     if (existente) {
       // Ya estaba pegada: la traemos al frente
@@ -501,18 +615,29 @@ const { stickers } = Astro.props;
     });
   }
 
-  const guardado = leer();
-  iniciarStickers(guardado);
+  function iniciar() {
+    const guardado = leer();
+    iniciarStickers(guardado);
 
-  // Restaurar obras que habías pegado en otra visita
-  Object.entries(guardado).forEach(([id, g]) => {
-    if (!g.src) return;
-    const el = crearObra(id, g.src, g.titulo ?? "Obra");
-    activar(el, (g.x / 100) * mesa.clientWidth, (g.y / 100) * mesa.clientHeight, g.giro);
-  });
+    // Restaurar obras que habías pegado antes (en otra visita o desde el moodboard)
+    Object.entries(guardado).forEach(([id, g]) => {
+      if (!g.src) return;
+      const el = crearObra(id, g.src, g.titulo ?? "Obra");
+      activar(el, (g.x / 100) * mesa.clientWidth, (g.y / 100) * mesa.clientHeight, g.giro);
+      el.style.zIndex = String(++zTope);
+    });
+  }
 
-  // Si cambia el tamaño de la pantalla, reacomodamos para que nada quede afuera
+  // La mesa vive en una hoja del cuaderno que empieza oculta (sin tamaño).
+  // Recién la armamos la primera vez que tiene tamaño real; después, si cambia
+  // el tamaño de la pantalla, reacomodamos para que nada quede afuera.
   new ResizeObserver(() => {
+    if (mesa.clientWidth === 0) return;
+    if (!lista) {
+      lista = true;
+      iniciar();
+      return;
+    }
     estados.forEach((s) => {
       limitar(s);
       pintar(s);

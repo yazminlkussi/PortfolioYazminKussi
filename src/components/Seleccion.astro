@@ -1,0 +1,62 @@
+---
+// Cuadro de selección con "manijas", como cuando seleccionás un texto en
+// un programa de diseño. Envuelve lo que le pases (normalmente un título).
+
+interface Props {
+  cursor?: boolean; // mostrar el cursor pixelado en la esquina
+}
+
+const { cursor = true } = Astro.props;
+---
+
+<span class="seleccion">
+  <slot />
+  <span class="seleccion__manijas" aria-hidden="true">
+    <i style="left:0;top:0"></i>
+    <i style="left:50%;top:0"></i>
+    <i style="left:100%;top:0"></i>
+    <i style="left:0;top:50%"></i>
+    <i style="left:100%;top:50%"></i>
+    <i style="left:0;top:100%"></i>
+    <i style="left:50%;top:100%"></i>
+    <i style="left:100%;top:100%"></i>
+  </span>
+  {
+    cursor && (
+      <svg class="seleccion__cursor" viewBox="0 0 12 19" aria-hidden="true" shape-rendering="crispEdges">
+        <path
+          fill="#fff"
+          stroke="#161616"
+          stroke-width="1"
+          d="M.5.5v15h1v-1h1v-1h1v2h1v2h1v1h2v-1h1v-2h-1v-2h-1v-2h4v-1h-1v-1h-1v-1h-1v-1h-1v-1h-1v-1h-1v-1h-1v-1h-1v-1h-1v-1h-1v-1z"
+        />
+      </svg>
+    )
+  }
+</span>
+
+<style>
+  .seleccion {
+    position: relative;
+    display: inline-block;
+    padding: 0.06em 0.12em 0.1em;
+    outline: 1px solid color-mix(in srgb, var(--tinta) 55%, transparent);
+  }
+
+  .seleccion__manijas i {
+    position: absolute;
+    width: 9px;
+    height: 9px;
+    translate: -50% -50%;
+    background: #fff;
+    border: 1px solid var(--tinta);
+  }
+
+  .seleccion__cursor {
+    position: absolute;
+    right: -26px;
+    bottom: -34px;
+    width: 22px;
+    height: auto;
+  }
+</style>

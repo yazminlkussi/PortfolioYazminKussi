@@ -1,0 +1,71 @@
+---
+// Carpeta rosa tipo Finder. Si recibe `href`, es un link (ej. a otra hoja).
+
+interface Props {
+  nombre: string;
+  href?: string;
+  color?: "rosa" | "azul";
+}
+
+const { nombre, href, color = "rosa" } = Astro.props;
+const Etiqueta = href ? "a" : "div";
+---
+
+<Etiqueta class:list={["carpeta", `carpeta--${color}`]} href={href}>
+  <svg viewBox="0 0 80 62" aria-hidden="true">
+    <path class="carpeta__atras" d="M4 6a5 5 0 0 1 5-5h20l6 7h36a5 5 0 0 1 5 5v42a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z" />
+    <path class="carpeta__frente" d="M2 20a5 5 0 0 1 5-5h66a5 5 0 0 1 5 5v35a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5z" />
+  </svg>
+  <span class="carpeta__nombre">{nombre}</span>
+</Etiqueta>
+
+<style>
+  .carpeta {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 104px;
+    text-decoration: none;
+    color: var(--tinta);
+    border-radius: 8px;
+    padding: 6px;
+    transition: transform 160ms var(--ease-out), background-color 160ms ease;
+  }
+
+  .carpeta svg {
+    width: 72px;
+  }
+
+  .carpeta--rosa .carpeta__atras {
+    fill: var(--rosa-fuerte);
+  }
+  .carpeta--rosa .carpeta__frente {
+    fill: var(--rosa);
+  }
+  .carpeta--azul .carpeta__atras {
+    fill: #4aa3ff;
+  }
+  .carpeta--azul .carpeta__frente {
+    fill: #7cbcff;
+  }
+
+  .carpeta__nombre {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    text-align: center;
+    line-height: 1.2;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  a.carpeta:active {
+    transform: scale(0.96);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    a.carpeta:hover {
+      background: color-mix(in srgb, var(--azul) 12%, transparent);
+    }
+  }
+</style>

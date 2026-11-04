@@ -1,7 +1,7 @@
 // Datos de los proyectos. Para sumar uno nuevo, agregá un objeto a la lista:
-// la página de proyectos se arma sola a partir de acá.
+// el cuaderno crea una hoja nueva automáticamente.
 
-export type Portada = "nodo" | "karaoke" | "marca" | "imagen";
+export type Portada = "nodo" | "karaoke" | "marca";
 
 export interface Proyecto {
   slug: string;
@@ -14,8 +14,9 @@ export interface Proyecto {
   herramientas: string[];
   equipo?: string;
   nota?: string; // nota escrita "a mano" sobre el recorte
-  portada: Portada; // composición riso que se usa como tapa
-  imagen?: string; // opcional: ruta en /public para reemplazar la composición
+  portada: Portada; // qué composición CSS se usa mientras no haya capturas
+  archivos: [string, string]; // nombres que aparecen en las barras de las ventanas
+  imagenes?: { src: string; alt: string }[]; // capturas reales en /public (reemplazan las composiciones)
   enlaces?: { texto: string; url: string }[];
 }
 
@@ -35,6 +36,7 @@ export const proyectos: Proyecto[] = [
     herramientas: ["Figma", "Web app responsive"],
     nota: "gestión + comunidad",
     portada: "nodo",
+    archivos: ["nodo_app.png", "comunidad.png"],
   },
   {
     slug: "karaoke",
@@ -53,9 +55,10 @@ export const proyectos: Proyecto[] = [
     equipo: "Con Iara Churba y Rocío Prieto Valdez — Redes y Tecnología",
     nota: "viví tu era popstar ★",
     portada: "karaoke",
+    archivos: ["escenario.mov", "celu_fila.png"],
   },
   {
-    slug: "dunkin-premium",
+    slug: "dunkin",
     titulo: "Dunkin', versión de lujo",
     tipo: "Rediseño de marca · identidad",
     anio: "2026",
@@ -70,5 +73,6 @@ export const proyectos: Proyecto[] = [
     herramientas: ["Illustrator", "Photoshop", "Figma"],
     nota: "en proceso ✶",
     portada: "marca",
+    archivos: ["dunkin_lux.jpg", "paleta.png"],
   },
 ];

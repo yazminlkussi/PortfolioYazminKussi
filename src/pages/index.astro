@@ -1,20 +1,26 @@
 ---
-// Página principal: el fanzine completo, una "página" debajo de la otra.
+// Página principal: un cuaderno con una hoja por sección y una por proyecto.
 import Base from "../layouts/Base.astro";
-import Indice from "../components/Indice.astro";
-import Portada from "../components/Portada.astro";
-import TarjetaProyecto from "../components/TarjetaProyecto.astro";
+import Cuaderno from "../components/Cuaderno.astro";
+import HojaProyecto from "../components/HojaProyecto.astro";
 import Moodboard from "../components/Moodboard.astro";
 import MesaDeCollage from "../components/MesaDeCollage.astro";
+import InterruptorTono from "../components/InterruptorTono.astro";
+import DialogoContacto from "../components/DialogoContacto.astro";
+import VentanaMac from "../components/VentanaMac.astro";
+import Seleccion from "../components/Seleccion.astro";
+import NotaMano from "../components/NotaMano.astro";
+import Carpeta from "../components/Carpeta.astro";
 import { proyectos } from "../data/proyectos";
 
+// El índice se arma solo: tapa, sobre mí, un proyecto por hoja, inspo, mesa y contacto
 const paginas = [
-  { id: "hola", num: "01", nombre: "hola" },
-  { id: "yo", num: "02", nombre: "yo" },
-  { id: "trabajos", num: "03", nombre: "trabajos" },
-  { id: "inspo", num: "04", nombre: "inspo" },
-  { id: "mesa", num: "05", nombre: "mesa" },
-  { id: "chau", num: "06", nombre: "chau" },
+  { id: "tapa", nombre: "tapa" },
+  { id: "yo", nombre: "sobre mí" },
+  ...proyectos.map((p) => ({ id: p.slug, nombre: p.slug })),
+  { id: "inspo", nombre: "inspo" },
+  { id: "mesa", nombre: "mesa" },
+  { id: "chau", nombre: "contacto" },
 ];
 
 const intereses = ["diseño visual", "código", "foto y video", "música", "cine", "arte", "lectura"];
@@ -23,231 +29,379 @@ const temasMoodboard = [
   { etiqueta: "collage", busqueda: "collage" },
   { etiqueta: "afiches", busqueda: "poster" },
   { etiqueta: "rosa", busqueda: "pink" },
-  { etiqueta: "azul", busqueda: "blue" },
+  { etiqueta: "packaging", busqueda: "packaging" },
   { etiqueta: "fotografía", busqueda: "photograph" },
   { etiqueta: "flores", busqueda: "flowers" },
 ];
 
 const stickers = [
-  { id: "hola", texto: "¡hola!", estilo: "rosa", x: 6, y: 10, giro: -8 },
-  { id: "estrella", texto: "★", estilo: "estrella", x: 78, y: 6, giro: 12 },
-  { id: "multimedia", texto: "multimedia", estilo: "azul", x: 48, y: 30, giro: 4 },
-  { id: "nota", texto: "me río mucho :)", estilo: "papel", x: 10, y: 58, giro: -4 },
-  { id: "cine", texto: "cine", estilo: "tinta", x: 66, y: 64, giro: -10 },
-  { id: "musica", texto: "♪ música", estilo: "rosa", x: 34, y: 78, giro: 6 },
-  { id: "codigo", texto: "</código>", estilo: "papel", x: 70, y: 40, giro: 8 },
+  { id: "carpeta", texto: "mis cosas", estilo: "carpeta", x: 6, y: 8, giro: -6 },
+  { id: "burbuja", texto: "hola! soy yaz", estilo: "burbuja", x: 52, y: 6, giro: 3 },
+  { id: "archivo", texto: "idea_final_v3.pdf", estilo: "archivo", x: 74, y: 30, giro: 6 },
+  { id: "copiar", texto: "Copiar | Compartir…", estilo: "menu", x: 30, y: 34, giro: -3 },
+  { id: "nota", texto: "me río mucho :)", estilo: "mano", x: 8, y: 62, giro: -5 },
+  { id: "toggle", texto: "modo creativa", estilo: "toggle", x: 44, y: 70, giro: 4 },
+  { id: "cursor", texto: "", estilo: "cursor", x: 82, y: 72, giro: -10 },
+  { id: "estrella", texto: "✦", estilo: "estrella", x: 62, y: 46, giro: 12 },
 ] as const;
 ---
 
 <Base>
-  <Indice paginas={paginas} />
+  <main id="contenido">
+    <h1 class="sr-only">Yazmin Kussi — portfolio</h1>
 
-  <main id="contenido" class="principal">
-    <div class="contenedor">
-      <Portada
-        nombre="Yazmin Kussi"
-        bajada="Diseño, programo y hago imágenes. Me interesan las experiencias que se sienten hechas a mano, aunque sean digitales."
-      />
-    </div>
-
-    <!-- 02 · Sobre mí -->
-    <section class="pagina" id="yo" aria-labelledby="yo-titulo">
-      <div class="contenedor yo">
-        <div>
-          <p class="pagina__num">02 — sobre mí</p>
-          <h2 class="pagina__titulo" id="yo-titulo">Risueña, curiosa <em>y un poco ruidosa</em></h2>
+    <Cuaderno paginas={paginas}>
+      <!-- 01 · Tapa -->
+      <section class="hoja tapa" data-hoja="tapa" data-nombre="tapa" aria-labelledby="tapa-titulo">
+        <div class="tapa__arriba">
+          <p class="etiqueta">portfolio · 2026</p>
+          <p class="etiqueta">diseño visual · código · imagen</p>
         </div>
-        <div class="yo__texto">
-          <p>
-            Estudio multimedia y me muevo entre el diseño visual, la programación y la imagen. Me gusta que las cosas
-            se vean lindas, pero sobre todo que se sientan bien al usarlas: que respondan, que sorprendan un poquito y
-            que tengan algo de quien las hizo.
+
+        <div class="tapa__centro">
+          <p class="tapa__hola">hola, soy</p>
+          <h2 class="tapa__titulo" id="tapa-titulo">
+            <Seleccion>yazmin kussi</Seleccion>
+          </h2>
+          <p class="tapa__bajada">
+            Estudio multimedia. Diseño, programo y hago imágenes: me gustan las cosas que se sienten hechas a mano,
+            aunque sean digitales.
           </p>
-          <p>
-            Fuera de la pantalla, vivo con música de fondo, junto referencias de cine y de arte, y leo. De ahí sale casi
-            todo lo que diseño: este portfolio es un fanzine porque así guardo las cosas que me gustan, recortadas y
-            pegadas.
-          </p>
-          <ul class="yo__intereses" aria-label="Intereses">
-            {intereses.map((i) => <li>{i}</li>)}
-          </ul>
         </div>
-      </div>
-    </section>
 
-    <!-- 03 · Proyectos -->
-    <section class="pagina pagina--tinta" id="trabajos" aria-labelledby="trabajos-titulo">
-      <div class="contenedor">
-        <p class="pagina__num">03 — trabajos</p>
-        <h2 class="pagina__titulo" id="trabajos-titulo">Cosas que <em>hice</em></h2>
-        <p class="pagina__bajada">Tocá un recorte para abrir su ficha.</p>
+        <div class="tapa__carpetas">
+          {proyectos.map((p) => <Carpeta nombre={p.slug} href={`#${p.slug}`} />)}
+          <Carpeta nombre="inspo" href="#inspo" color="azul" />
+        </div>
 
-        <div class="grilla-proyectos">
-          {proyectos.map((p, i) => <TarjetaProyecto proyecto={p} indice={i} />)}
-          <div class="proximo" aria-label="Próximo proyecto, en proceso">
-            <p class="mano">este espacio está esperando el próximo recorte…</p>
+        <p class="tapa__burbuja" aria-hidden="true">pasá la hoja →</p>
+        <NotaMano class="tapa__nota" flecha="derecha" giro={-4}>cada hoja, un proyecto</NotaMano>
+      </section>
+
+      <!-- 02 · Sobre mí -->
+      <section class="hoja" data-hoja="yo" data-nombre="sobre mí" aria-labelledby="yo-titulo">
+        <div class="yo">
+          <div class="yo__foto">
+            <VentanaMac titulo="yo.jpg" giro={-2}>
+              <!-- Reemplazar por tu foto: <img src="/yo.jpg" alt="Yazmin sonriendo" /> -->
+              <div class="yo__placeholder" aria-hidden="true">
+                <span class="mano">yaz ✿</span>
+              </div>
+            </VentanaMac>
+            <NotaMano class="yo__nota" flecha="izquierda" giro={-5}>risueña y extrovertida</NotaMano>
+          </div>
+
+          <div class="yo__texto">
+            <p class="etiqueta">sobre mí</p>
+            <h2 class="yo__titulo" id="yo-titulo">un poco de mí</h2>
+            <InterruptorTono>
+              <Fragment slot="risuena">
+                <p>
+                  ¡Hola! Soy Yaz. Me río mucho, hablo bastante y me entusiasmo con todo lo que tenga que ver con diseño,
+                  código e imagen. Me encanta que las cosas se vean lindas, pero más que se sientan bien: que respondan,
+                  que sorprendan un poquito y que tengan algo de quien las hizo.
+                </p>
+                <p>
+                  Siempre tengo música de fondo, una lista de pelis pendientes y alguna referencia de arte guardada.
+                  Este portfolio es un cuaderno porque así guardo las cosas que me gustan.
+                </p>
+              </Fragment>
+              <Fragment slot="formal">
+                <p>
+                  Yazmin Kussi, estudiante de multimedia. Trabajo en la intersección entre diseño visual, desarrollo
+                  web e imagen, con foco en experiencias interactivas cuidadas y accesibles.
+                </p>
+                <p>
+                  Mis intereses incluyen la identidad de marca, el diseño de interfaces, la fotografía y el video. Me
+                  interesa especialmente el detalle: la tipografía, el movimiento y la respuesta de cada interacción.
+                </p>
+              </Fragment>
+            </InterruptorTono>
+            <ul class="pildoras yo__intereses" aria-label="Intereses">
+              {intereses.map((i) => <li>{i}</li>)}
+            </ul>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- 04 · Moodboard -->
-    <section class="pagina" id="inspo" aria-labelledby="inspo-titulo">
-      <div class="contenedor">
-        <p class="pagina__num">04 — inspo</p>
-        <h2 class="pagina__titulo" id="inspo-titulo">Lo que me <em>inspira</em></h2>
-        <p class="pagina__bajada">
-          Un moodboard vivo con obras de un museo de verdad. Elegí un tema o buscá algo, y pegá en la mesa lo que te
-          guste.
+      <!-- Una hoja por proyecto -->
+      {proyectos.map((p, i) => <HojaProyecto proyecto={p} numero={i + 1} />)}
+
+      <!-- Inspo -->
+      <section class="hoja" data-hoja="inspo" data-nombre="inspo" aria-labelledby="inspo-titulo">
+        <p class="etiqueta">inspo</p>
+        <h2 class="hoja__titulo" id="inspo-titulo">lo que me <Seleccion cursor={false}>inspira</Seleccion></h2>
+        <p class="hoja__bajada">
+          Un moodboard vivo con piezas de un museo de verdad. Elegí un tema o buscá algo (en inglés funciona mejor) y
+          pegá en la mesa lo que te guste.
         </p>
         <Moodboard temas={temasMoodboard} />
-      </div>
-    </section>
+      </section>
 
-    <!-- 05 · Mesa de collage -->
-    <section class="pagina pagina--tinta" id="mesa" aria-labelledby="mesa-titulo">
-      <div class="contenedor">
-        <p class="pagina__num">05 — mesa</p>
-        <h2 class="pagina__titulo" id="mesa-titulo">Armá tu <em>página</em></h2>
-        <p class="pagina__bajada">
+      <!-- Mesa -->
+      <section class="hoja" data-hoja="mesa" data-nombre="mesa" aria-labelledby="mesa-titulo">
+        <p class="etiqueta">mesa de collage</p>
+        <h2 class="hoja__titulo" id="mesa-titulo">armá tu <Seleccion cursor={false}>página</Seleccion></h2>
+        <p class="hoja__bajada">
           Así trabajo yo: probando, moviendo y volviendo a pegar. Ahora te toca a vos. Tu collage queda guardado en este
           navegador.
         </p>
         <MesaDeCollage stickers={[...stickers]} />
-      </div>
-    </section>
+      </section>
 
-    <!-- 06 · Contraportada -->
-    <footer class="pagina contra" id="chau" aria-labelledby="chau-titulo">
-      <div class="contenedor">
-        <p class="pagina__num">06 — contraportada</p>
-        <h2 class="pagina__titulo contra__titulo" id="chau-titulo">¿Hacemos algo <em>juntxs?</em></h2>
-        <ul class="contra__links">
-          <li><a class="boton boton--lleno" href="mailto:hola@ejemplo.com">Escribime</a></li>
-          <li><a class="boton" href="https://www.instagram.com/" target="_blank" rel="noopener">Instagram ↗</a></li>
-          <li><a class="boton" href="https://www.linkedin.com/" target="_blank" rel="noopener">LinkedIn ↗</a></li>
-          <li><a class="boton" href="https://github.com/" target="_blank" rel="noopener">GitHub ↗</a></li>
-        </ul>
-        <p class="contra__firma">
+      <!-- Contacto -->
+      <section class="hoja chau" data-hoja="chau" data-nombre="contacto" aria-labelledby="chau-titulo">
+        <div class="chau__grilla">
+          <div>
+            <p class="etiqueta">contacto</p>
+            <h2 class="chau__titulo" id="chau-titulo">¿hacemos algo <Seleccion>juntxs?</Seleccion></h2>
+            <ul class="chau__links">
+              <li><a class="boton" href="https://www.instagram.com/" target="_blank" rel="noopener">Instagram ↗</a></li>
+              <li><a class="boton" href="https://www.linkedin.com/" target="_blank" rel="noopener">LinkedIn ↗</a></li>
+              <li><a class="boton" href="https://github.com/" target="_blank" rel="noopener">GitHub ↗</a></li>
+            </ul>
+          </div>
+          <div class="chau__dialogo">
+            <DialogoContacto email="hola@ejemplo.com" />
+            <NotaMano class="chau__nota" flecha="izquierda" giro={-4}>escribime!</NotaMano>
+          </div>
+        </div>
+        <p class="chau__firma">
           <span class="mano">hecho a mano (y con código) por Yazmin Kussi ✿</span>
-          <span>Fanzine N°1 · 2026 · Programación Multimedial IV</span>
+          <span>Programación Multimedial IV · 2026</span>
         </p>
-      </div>
-    </footer>
+      </section>
+    </Cuaderno>
   </main>
 </Base>
 
 <style>
-  /* Lugar para el índice: abajo en celular, a la izquierda en escritorio */
-  .principal {
-    padding-bottom: 72px;
+  /* ---------- Títulos comunes de hoja ---------- */
+  .hoja__titulo {
+    font-size: clamp(2.5rem, 6vw, 4.25rem);
+    margin: 14px 0 0;
   }
 
-  @media (min-width: 1024px) {
-    .principal {
-      padding-bottom: 0;
-      padding-left: 168px;
+  .hoja__bajada {
+    max-width: 56ch;
+    color: var(--tinta-suave);
+    margin: 18px 0 0;
+  }
+
+  /* ---------- Tapa ---------- */
+  .tapa {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 32px;
+  }
+
+  .tapa__arriba {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .tapa__centro {
+    align-self: center;
+    text-align: center;
+    padding-block: 24px;
+  }
+
+  .tapa__hola {
+    margin: 0 0 6px;
+    font-size: clamp(1.25rem, 3vw, 1.75rem);
+    font-weight: 300;
+    letter-spacing: -0.02em;
+  }
+
+  .tapa__titulo {
+    font-size: clamp(3.25rem, 12vw, 9rem);
+    font-weight: 300;
+    letter-spacing: -0.06em;
+    line-height: 0.95;
+  }
+
+  .tapa__bajada {
+    max-width: 44ch;
+    margin: 44px auto 0;
+    color: var(--tinta-suave);
+  }
+
+  .tapa__carpetas {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px 20px;
+  }
+
+  .tapa__burbuja {
+    justify-self: end;
+    margin: 0;
+    background: var(--azul);
+    color: #fff;
+    font-size: 0.9375rem;
+    padding: 8px 14px;
+    border-radius: 18px 18px 4px 18px;
+    box-shadow: var(--sombra-foto);
+  }
+
+  :global(.tapa__nota) {
+    display: none;
+  }
+
+  /* Escritorio: las carpetas y notas se reparten alrededor del título */
+  @media (min-width: 900px) {
+    .tapa {
+      position: relative;
+      display: block;
+      min-height: min(80svh, 760px);
     }
-  }
-
-  /* Páginas alternadas con una tinta azul muy suave */
-  .pagina--tinta {
-    background: color-mix(in srgb, var(--azul-claro) 40%, var(--papel));
-    border-block: 1.5px solid var(--tinta);
+    .tapa__centro {
+      position: absolute;
+      inset: 50% 0 auto;
+      translate: 0 -50%;
+      padding: 0 8%;
+    }
+    .tapa__carpetas {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    .tapa__carpetas :global(.carpeta) {
+      position: absolute;
+      pointer-events: auto;
+    }
+    .tapa__carpetas :global(.carpeta:nth-child(1)) { left: 8%; top: 22%; rotate: -5deg; }
+    .tapa__carpetas :global(.carpeta:nth-child(2)) { right: 9%; top: 18%; rotate: 4deg; }
+    .tapa__carpetas :global(.carpeta:nth-child(3)) { left: 12%; bottom: 10%; rotate: 3deg; }
+    .tapa__carpetas :global(.carpeta:nth-child(4)) { right: 14%; bottom: 14%; rotate: -4deg; }
+    .tapa__burbuja {
+      position: absolute;
+      right: 6%;
+      bottom: 4%;
+    }
+    :global(.tapa__nota) {
+      display: inline-flex;
+      position: absolute;
+      right: 22%;
+      bottom: 3%;
+      max-width: none;
+    }
   }
 
   /* ---------- Sobre mí ---------- */
   .yo {
     display: grid;
-    gap: 32px;
+    gap: 48px;
   }
 
-  @media (min-width: 860px) {
+  @media (min-width: 900px) {
     .yo {
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 0.85fr 1fr;
       gap: 64px;
-      align-items: start;
+      align-items: center;
     }
   }
 
-  .yo__texto p {
-    margin: 0 0 18px;
+  .yo__foto {
+    position: relative;
+    max-width: 420px;
+    padding-bottom: 56px;
+  }
+
+  .yo__placeholder {
+    aspect-ratio: 4 / 5;
+    background: var(--rosa);
+    display: grid;
+    place-items: center;
+  }
+
+  .yo__placeholder .mano {
+    font-size: clamp(3rem, 8vw, 4.5rem);
+    color: var(--tinta);
+  }
+
+  :global(.yo__nota) {
+    position: absolute;
+    right: -8px;
+    bottom: 0;
+  }
+
+  .yo__titulo {
+    font-size: clamp(2.5rem, 6vw, 4rem);
+    margin: 12px 0 24px;
+  }
+
+  .yo__texto :global(p:not(.etiqueta)) {
     font-size: 1.125rem;
+    margin: 0 0 16px;
   }
 
   .yo__intereses {
+    margin-top: 24px;
+  }
+
+  /* ---------- Contacto ---------- */
+  .chau {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 56px;
+  }
+
+  .chau__grilla {
+    display: grid;
+    gap: 48px;
+    align-items: center;
+  }
+
+  @media (min-width: 900px) {
+    .chau__grilla {
+      grid-template-columns: 1.3fr 1fr;
+    }
+  }
+
+  .chau__titulo {
+    font-size: clamp(2.75rem, 8vw, 6rem);
+    font-weight: 300;
+    letter-spacing: -0.06em;
+    margin: 14px 0 32px;
+  }
+
+  .chau__links {
     list-style: none;
     padding: 0;
-    margin: 24px 0 0;
+    margin: 0;
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
   }
 
-  .yo__intereses li {
-    padding: 6px 14px;
-    border-radius: 999px;
-    border: 1.5px solid var(--tinta);
-    font-size: 0.9375rem;
+  .chau__dialogo {
+    position: relative;
+    justify-self: center;
+    padding-bottom: 60px;
   }
 
-  .yo__intereses li:nth-child(3n + 1) {
-    background: var(--rosa-claro);
-  }
-  .yo__intereses li:nth-child(3n + 2) {
-    background: var(--azul-claro);
-  }
-
-  /* ---------- Proyectos ---------- */
-  .grilla-proyectos {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
-    gap: clamp(32px, 5vw, 56px) clamp(24px, 4vw, 40px);
-    margin-top: 48px;
+  :global(.chau__nota) {
+    position: absolute;
+    right: -20px;
+    bottom: 0;
   }
 
-  .proximo {
-    display: grid;
-    place-items: center;
-    min-height: 260px;
-    border: 1.5px dashed var(--tinta-suave);
-    padding: 24px;
-    text-align: center;
-    rotate: 1.5deg;
-  }
-
-  .proximo p {
-    margin: 0;
-    font-size: 1.625rem;
-    color: var(--tinta-suave);
-    max-width: 16ch;
-  }
-
-  /* ---------- Contraportada ---------- */
-  .contra__titulo {
-    font-size: clamp(3rem, 9vw, 7rem);
-  }
-
-  .contra__links {
-    list-style: none;
-    padding: 0;
-    margin: 40px 0 64px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-
-  .contra__firma {
+  .chau__firma {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
+    margin: 0;
+    padding-top: 18px;
+    border-top: 1px solid var(--linea);
     font-size: 0.875rem;
     color: var(--tinta-suave);
-    border-top: 1.5px dashed var(--tinta-suave);
-    padding-top: 20px;
   }
 
-  .contra__firma .mano {
+  .chau__firma .mano {
     font-size: 1.5rem;
     color: var(--rosa-texto);
   }

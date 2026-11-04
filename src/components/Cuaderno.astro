@@ -1,0 +1,461 @@
+---
+// El cuaderno: contiene las hojas y resuelve la navegación entre ellas.
+//
+// Cómo se pasa de hoja:
+//   - Pestañas del índice (al costado en escritorio, arriba en celular)
+//   - Botones anterior / siguiente al pie
+//   - Flechas del teclado ← →   (sin animación: el teclado tiene que ser instantáneo)
+//   - Deslizar con el dedo en el celular
+//   - La URL guarda la hoja (#nodo, #mesa...): se puede compartir y el botón "atrás" funciona
+//
+// Cada hoja es un <section data-hoja="id" data-nombre="..."> que viene por el <slot />.
+
+interface Pagina {
+  id: string;
+  nombre: string;
+}
+
+interface Props {
+  paginas: Pagina[];
+}
+
+const { paginas } = Astro.props;
+const anillos = Array.from({ length: 16 });
+---
+
+<div class="cuaderno" data-cuaderno>
+  <nav class="cuaderno__indice" aria-label="Índice del cuaderno">
+    <ol>
+      {
+        paginas.map((p, i) => (
+          <li>
+            <a href={`#${p.id}`} data-ir={p.id} aria-current={i === 0 ? "page" : undefined}>
+              <span class="num">{String(i + 1).padStart(2, "0")}</span> {p.nombre}
+            </a>
+          </li>
+        ))
+      }
+    </ol>
+  </nav>
+
+  <div class="cuaderno__cuerpo">
+    <div class="cuaderno__espiral" aria-hidden="true">
+      {anillos.map(() => <i />)}
+    </div>
+    <div class="cuaderno__hojas" data-hojas>
+      <slot />
+    </div>
+  </div>
+
+  <div class="cuaderno__pie">
+    <button class="boton" type="button" data-anterior aria-label="Hoja anterior">← <span class="pie__txt">anterior</span></button>
+    <p class="cuaderno__contador" data-contador>01 / {String(paginas.length).padStart(2, "0")}</p>
+    <button class="boton boton--azul" type="button" data-siguiente>
+      <span data-siguiente-txt>siguiente</span> →
+    </button>
+  </div>
+
+  <p class="sr-only" aria-live="polite" data-anuncio-hoja></p>
+</div>
+
+<style>
+  .cuaderno {
+    --ancho-espiral: 34px;
+    position: relative;
+    width: min(100%, 1200px);
+    margin-inline: auto;
+    padding: 12px var(--gutter) 32px;
+  }
+
+  /* ---------- Índice (pestañas) ---------- */
+  .cuaderno__indice ol {
+    list-style: none;
+    margin: 0 0 14px;
+    padding: 2px 2px 6px;
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .cuaderno__indice a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 0 14px;
+    border-radius: 999px;
+    white-space: nowrap;
+    text-decoration: none;
+    font-size: 0.9375rem;
+    color: var(--tinta-suave);
+    background: color-mix(in srgb, var(--papel) 60%, transparent);
+    transition: background-color 160ms ease, color 160ms ease, transform 160ms var(--ease-out);
+  }
+
+  .cuaderno__indice a:active {
+    transform: scale(0.97);
+  }
+
+  .cuaderno__indice .num {
+    font-size: 0.75rem;
+    color: var(--gris);
+  }
+
+  .cuaderno__indice a[aria-current="page"] {
+    background: var(--rosa);
+    color: var(--tinta);
+  }
+
+  .cuaderno__indice a[aria-current="page"] .num {
+    color: var(--tinta);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .cuaderno__indice a:not([aria-current="page"]):hover {
+      background: var(--papel);
+      color: var(--tinta);
+    }
+  }
+
+  /* ---------- Cuerpo: espiral + hojas ---------- */
+  .cuaderno__cuerpo {
+    position: relative;
+    display: grid;
+    grid-template-columns: var(--ancho-espiral) 1fr;
+  }
+
+  .cuaderno__espiral {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    padding-block: 18px;
+  }
+
+  /* Cada anillo: un alambre que cruza el borde, más el agujero en la hoja */
+  .cuaderno__espiral i {
+    position: relative;
+    display: block;
+    width: 46px;
+    height: 9px;
+    border-radius: 6px;
+    background: linear-gradient(#cfcfcf, #7a7a7a 55%, #b5b5b5);
+    box-shadow: 0 2px 2px rgb(0 0 0 / 0.18);
+  }
+
+  .cuaderno__espiral i::after {
+    content: "";
+    position: absolute;
+    right: 2px;
+    top: 50%;
+    width: 9px;
+    height: 9px;
+    translate: 0 -50%;
+    border-radius: 50%;
+    background: var(--fondo);
+    box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.35);
+    z-index: -1;
+  }
+
+  .cuaderno__hojas {
+    position: relative;
+    perspective: 2200px;
+    /* Para que deslizar horizontal con el dedo llegue a nuestro código */
+    touch-action: pan-y;
+  }
+
+  /* Bordes de hojas apiladas detrás de la actual */
+  .cuaderno__hojas::before,
+  .cuaderno__hojas::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 4px 14px 14px 4px;
+    background: var(--papel-2);
+    box-shadow: var(--sombra-hoja);
+  }
+  .cuaderno__hojas::before {
+    translate: 6px 6px;
+  }
+  .cuaderno__hojas::after {
+    translate: 3px 3px;
+    background: var(--papel);
+  }
+
+  /* Cada hoja (viene del slot) */
+  .cuaderno__hojas :global(.hoja) {
+    position: relative;
+    z-index: 1;
+    min-height: min(80svh, 780px);
+    padding: clamp(24px, 5vw, 64px) clamp(20px, 5vw, 64px) clamp(32px, 5vw, 64px);
+    padding-left: clamp(28px, 5vw, 72px);
+    background: var(--papel);
+    border-radius: 4px 14px 14px 4px;
+    box-shadow: var(--sombra-hoja);
+    transform-origin: left center;
+    backface-visibility: hidden;
+  }
+
+  /* Las hojas ocultas no se ven nunca, aunque su layout use display: grid/flex */
+  .cuaderno__hojas :global(.hoja[hidden]) {
+    display: none !important;
+  }
+
+  .cuaderno__hojas :global(.hoja:focus) {
+    outline: none;
+  }
+
+  /* La hoja que está "volando" se pone encima, alineada arriba */
+  .cuaderno__hojas :global(.hoja--volando) {
+    position: absolute;
+    inset: 0 0 auto 0;
+    z-index: 2;
+    will-change: transform, opacity;
+  }
+
+  /* ---------- Pie ---------- */
+  .cuaderno__pie {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 20px;
+    padding-left: var(--ancho-espiral);
+  }
+
+  .cuaderno__contador {
+    margin: 0;
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--tinta-suave);
+  }
+
+  @media (max-width: 520px) {
+    .pie__txt {
+      display: none;
+    }
+  }
+
+  /* ---------- Escritorio: índice como pestañas al costado ---------- */
+  @media (min-width: 1100px) {
+    .cuaderno {
+      padding-right: 150px;
+      padding-top: 32px;
+    }
+
+    .cuaderno__indice {
+      position: absolute;
+      top: 72px;
+      right: 22px;
+      width: 132px;
+    }
+
+    .cuaderno__indice ol {
+      flex-direction: column;
+      gap: 4px;
+      overflow: visible;
+    }
+
+    /* Pestañas que "salen" del costado de la hoja */
+    .cuaderno__indice a {
+      width: 100%;
+      justify-content: flex-start;
+      border-radius: 0 10px 10px 0;
+      background: var(--papel-2);
+      box-shadow: var(--sombra-foto);
+      padding-left: 16px;
+    }
+
+    .cuaderno__indice a[aria-current="page"] {
+      translate: -8px 0;
+    }
+  }
+</style>
+
+<script>
+  const raiz = document.querySelector<HTMLElement>("[data-cuaderno]")!;
+  const hojas = [...raiz.querySelectorAll<HTMLElement>("[data-hoja]")];
+  const links = [...raiz.querySelectorAll<HTMLAnchorElement>("[data-ir]")];
+  const btnAnterior = raiz.querySelector<HTMLButtonElement>("[data-anterior]")!;
+  const btnSiguiente = raiz.querySelector<HTMLButtonElement>("[data-siguiente]")!;
+  const txtSiguiente = raiz.querySelector<HTMLElement>("[data-siguiente-txt]")!;
+  const contador = raiz.querySelector<HTMLElement>("[data-contador]")!;
+  const anuncio = raiz.querySelector<HTMLElement>("[data-anuncio-hoja]")!;
+  const zonaHojas = raiz.querySelector<HTMLElement>("[data-hojas]")!;
+  const reducido = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const total = hojas.length;
+  const dos = (n: number) => String(n).padStart(2, "0");
+  let actual = 0;
+  let siguienteSinAnimar = false;
+
+  // La animación en curso y cómo dejar todo prolijo si se interrumpe
+  let pendiente: { anim: Animation; limpiar: () => void } | null = null;
+
+  function cerrarPendiente() {
+    if (!pendiente) return;
+    const p = pendiente;
+    pendiente = null;
+    p.anim.cancel();
+    p.limpiar();
+  }
+
+  function indiceDe(id: string) {
+    const i = hojas.findIndex((h) => h.dataset.hoja === id);
+    return i === -1 ? 0 : i;
+  }
+
+  function actualizarUI() {
+    links.forEach((l, i) => {
+      if (i === actual) l.setAttribute("aria-current", "page");
+      else l.removeAttribute("aria-current");
+    });
+    // La pestaña activa siempre a la vista (en celular el índice scrollea)
+    const lista = links[actual]?.closest("ol");
+    if (lista && lista.scrollWidth > lista.clientWidth) {
+      lista.scrollTo({ left: links[actual].offsetLeft - 24, behavior: "smooth" });
+    }
+    contador.textContent = `${dos(actual + 1)} / ${dos(total)}`;
+    btnAnterior.style.visibility = actual === 0 ? "hidden" : "visible";
+    txtSiguiente.textContent = actual === total - 1 ? "volver a la tapa" : "siguiente";
+    document.title = `${hojas[actual].dataset.nombre} — Yazmin Kussi`;
+  }
+
+  // ---------- Pasar de hoja ----------
+  function ir(n: number, animar = true) {
+    if (n < 0 || n >= total || n === actual) return;
+    cerrarPendiente();
+
+    const sale = hojas[actual];
+    const entra = hojas[n];
+    const adelante = n > actual;
+    actual = n;
+    actualizarUI();
+
+    // Si el cuaderno quedó más arriba (scrolleaste), volvemos al principio de la hoja
+    const arriba = raiz.getBoundingClientRect().top;
+    if (arriba < 0) window.scrollBy({ top: arriba, behavior: animar && !reducido ? "smooth" : "auto" });
+
+    if (!animar) {
+      sale.hidden = true;
+      entra.hidden = false;
+    } else if (reducido) {
+      // Movimiento reducido: solo un fundido
+      sale.hidden = true;
+      entra.hidden = false;
+      entra.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, easing: "ease" });
+    } else if (adelante) {
+      // Adelante: la hoja actual se da vuelta hacia la izquierda y deja ver la siguiente
+      entra.hidden = false;
+      sale.classList.add("hoja--volando");
+      const anim = sale.animate(
+        [
+          { transform: "rotateY(0deg)", opacity: 1 },
+          { transform: "rotateY(-70deg)", opacity: 1, offset: 0.65 },
+          { transform: "rotateY(-100deg)", opacity: 0 },
+        ],
+        { duration: 520, easing: "cubic-bezier(0.45, 0, 0.2, 1)" }
+      );
+      const limpiar = () => {
+        sale.hidden = true;
+        sale.classList.remove("hoja--volando");
+      };
+      pendiente = { anim, limpiar };
+      anim.onfinish = () => {
+        if (pendiente?.anim === anim) {
+          pendiente = null;
+          limpiar();
+        }
+      };
+    } else {
+      // Atrás: la hoja anterior vuelve desde la izquierda y tapa la actual
+      entra.hidden = false;
+      entra.classList.add("hoja--volando");
+      const anim = entra.animate(
+        [
+          { transform: "rotateY(-100deg)", opacity: 0 },
+          { transform: "rotateY(-70deg)", opacity: 1, offset: 0.35 },
+          { transform: "rotateY(0deg)", opacity: 1 },
+        ],
+        { duration: 520, easing: "cubic-bezier(0.45, 0, 0.2, 1)" }
+      );
+      const limpiar = () => {
+        sale.hidden = true;
+        entra.classList.remove("hoja--volando");
+      };
+      pendiente = { anim, limpiar };
+      anim.onfinish = () => {
+        if (pendiente?.anim === anim) {
+          pendiente = null;
+          limpiar();
+        }
+      };
+    }
+
+    // Accesibilidad: el foco pasa a la hoja nueva y se anuncia
+    entra.focus({ preventScroll: true });
+    anuncio.textContent = `Hoja ${actual + 1} de ${total}: ${entra.dataset.nombre}`;
+    window.dispatchEvent(new CustomEvent("cuaderno:hoja", { detail: { id: entra.dataset.hoja } }));
+  }
+
+  // Toda navegación pasa por la URL (#id); el evento hashchange hace el cambio.
+  function irA(n: number, sinAnimar = false) {
+    const destino = (n + total) % total; // desde la última, "siguiente" vuelve a la tapa
+    siguienteSinAnimar = sinAnimar;
+    location.hash = hojas[destino].dataset.hoja!;
+  }
+
+  window.addEventListener("hashchange", () => {
+    const sinAnimar = siguienteSinAnimar;
+    siguienteSinAnimar = false;
+    ir(indiceDe(location.hash.slice(1)), !sinAnimar);
+  });
+
+  btnAnterior.addEventListener("click", () => irA(actual - 1));
+  btnSiguiente.addEventListener("click", () => irA(actual + 1));
+
+  // ---------- Teclado ----------
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    const t = e.target as HTMLElement;
+    // No robamos las flechas a campos de texto ni a los stickers de la mesa
+    if (t.closest("input, textarea, select, [contenteditable], .sticker, dialog")) return;
+    if (e.key === "ArrowRight" && actual < total - 1) irA(actual + 1, true);
+    if (e.key === "ArrowLeft" && actual > 0) irA(actual - 1, true);
+  });
+
+  // ---------- Deslizar con el dedo ----------
+  let toque: { x: number; y: number; t: number; id: number } | null = null;
+
+  zonaHojas.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "mouse") return;
+    if ((e.target as HTMLElement).closest(".mesa, a, button, input, textarea")) return;
+    toque = { x: e.clientX, y: e.clientY, t: performance.now(), id: e.pointerId };
+  });
+
+  zonaHojas.addEventListener("pointerup", (e) => {
+    if (!toque || e.pointerId !== toque.id) return;
+    const dx = e.clientX - toque.x;
+    const dy = e.clientY - toque.y;
+    const velocidad = Math.abs(dx) / (performance.now() - toque.t);
+    toque = null;
+    // Tiene que ser bien horizontal, y largo o rápido (un "flick" alcanza)
+    if (Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    if (Math.abs(dx) < 70 && velocidad < 0.5) return;
+    if (dx < 0 && actual < total - 1) irA(actual + 1);
+    if (dx > 0 && actual > 0) irA(actual - 1);
+  });
+
+  zonaHojas.addEventListener("pointercancel", () => (toque = null));
+
+  // ---------- Arranque: abrimos en la hoja de la URL (o la tapa) ----------
+  actual = indiceDe(location.hash.slice(1));
+  hojas.forEach((h, i) => {
+    h.hidden = i !== actual;
+    h.tabIndex = -1;
+  });
+  actualizarUI();
+</script>

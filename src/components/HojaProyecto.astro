@@ -1,0 +1,473 @@
+---
+// Una hoja del cuaderno dedicada a un proyecto.
+// A la izquierda el texto (qué es, mi rol, herramientas) y a la derecha
+// un collage de escritorio: dos ventanas, una nota a mano y una carpeta.
+// Mientras no haya capturas reales, las ventanas muestran composiciones hechas con CSS.
+import type { Proyecto } from "../data/proyectos";
+import VentanaMac from "./VentanaMac.astro";
+import Seleccion from "./Seleccion.astro";
+import NotaMano from "./NotaMano.astro";
+import Carpeta from "./Carpeta.astro";
+
+interface Props {
+  proyecto: Proyecto;
+  numero: number;
+}
+
+const { proyecto: p, numero } = Astro.props;
+const idTitulo = `${p.slug}-titulo`;
+const [img1, img2] = p.imagenes ?? [];
+---
+
+<section class="hoja" data-hoja={p.slug} data-nombre={p.titulo} aria-labelledby={idTitulo}>
+  <div class="hp">
+    <div class="hp__texto">
+      <p class="etiqueta">proyecto {String(numero).padStart(2, "0")} · {p.tipo} · {p.anio}</p>
+      <h2 class="hp__titulo" id={idTitulo}>
+        <Seleccion cursor={false}>{p.titulo}</Seleccion>
+      </h2>
+      <p class="hp__resumen">{p.resumen}</p>
+      {p.descripcion.map((parrafo) => <p>{parrafo}</p>)}
+
+      <dl class="hp__datos">
+        <div>
+          <dt>mi rol</dt>
+          <dd>{p.rol}</dd>
+        </div>
+        {
+          p.equipo && (
+            <div>
+              <dt>equipo</dt>
+              <dd>{p.equipo}</dd>
+            </div>
+          )
+        }
+        <div>
+          <dt>herramientas</dt>
+          <dd>
+            <ul class="pildoras">
+              {p.herramientas.map((h) => <li>{h}</li>)}
+            </ul>
+          </dd>
+        </div>
+      </dl>
+
+      {
+        p.enlaces && (
+          <p class="hp__enlaces">
+            {p.enlaces.map((e) => (
+              <a class="boton" href={e.url} target="_blank" rel="noopener">
+                {e.texto} ↗
+              </a>
+            ))}
+          </p>
+        )
+      }
+    </div>
+
+    <div class="hp__collage">
+      <VentanaMac titulo={p.archivos[0]} giro={-1.5} class="hp__v1">
+        {
+          img1 ? (
+            <img src={img1.src} alt={img1.alt} loading="lazy" />
+          ) : (
+            <div class={`mk mk--${p.portada}-a`} aria-hidden="true">
+              {p.portada === "nodo" && (
+                <>
+                  <div class="nodo-top">
+                    <b>nodo</b>
+                    <span>club social · panel</span>
+                  </div>
+                  <div class="nodo-stats">
+                    <div><small>socios</small><strong>248</strong></div>
+                    <div><small>cuotas al día</small><strong>92%</strong></div>
+                    <div><small>actividades</small><strong>12</strong></div>
+                  </div>
+                  <ul class="nodo-lista">
+                    <li><i />Torneo de vóley <em>sáb 18 h</em></li>
+                    <li><i />Taller de murga <em>mar 19 h</em></li>
+                    <li><i />Asamblea de socios <em>jue 20 h</em></li>
+                  </ul>
+                </>
+              )}
+              {p.portada === "karaoke" && (
+                <>
+                  <span class="k-estrella">★</span>
+                  <p class="k-titulo">viví tu<br />era<br />popstar</p>
+                  <p class="k-letra"><mark>la la la</mark> ahora cantás vos…</p>
+                  <span class="k-trama" />
+                </>
+              )}
+              {p.portada === "marca" && (
+                <>
+                  <p class="m-marca">Dunkin'</p>
+                  <span class="m-filete" />
+                  <p class="m-bajada">premium coffee &amp; donuts</p>
+                </>
+              )}
+            </div>
+          )
+        }
+      </VentanaMac>
+
+      <VentanaMac titulo={p.archivos[1]} giro={3} class="hp__v2">
+        {
+          img2 ? (
+            <img src={img2.src} alt={img2.alt} loading="lazy" />
+          ) : (
+            <div class={`mk mk--${p.portada}-b`} aria-hidden="true">
+              {p.portada === "nodo" && (
+                <>
+                  <p class="burbuja burbuja--gris">¿quién viene al torneo?</p>
+                  <p class="burbuja burbuja--azul">yo!! llevo la pelota</p>
+                  <p class="burbuja burbuja--gris">somos 9 ✌️</p>
+                </>
+              )}
+              {p.portada === "karaoke" && (
+                <>
+                  <small>estás en la fila</small>
+                  <strong>#3</strong>
+                  <span class="k-boton">elegir canción</span>
+                </>
+              )}
+              {p.portada === "marca" && (
+                <>
+                  <i style="background:#2a1a14" />
+                  <i style="background:#efe4d2" />
+                  <i style="background:#c9877f" />
+                  <i style="background:#b8975a" />
+                </>
+              )}
+            </div>
+          )
+        }
+      </VentanaMac>
+
+      {p.nota && <NotaMano class="hp__nota" flecha="izquierda" giro={-4}>{p.nota}</NotaMano>}
+
+      <div class="hp__carpeta">
+        <Carpeta nombre={p.slug} />
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .hp {
+    display: grid;
+    gap: 48px;
+  }
+
+  @media (min-width: 980px) {
+    .hp {
+      grid-template-columns: 1fr 1.05fr;
+      gap: 56px;
+      align-items: start;
+    }
+  }
+
+  .hp__titulo {
+    font-size: clamp(2.75rem, 7vw, 5rem);
+    margin: 18px 0 22px;
+  }
+
+  .hp__resumen {
+    font-size: 1.25rem;
+    line-height: 1.4;
+    letter-spacing: -0.01em;
+  }
+
+  .hp__texto > p:not(.etiqueta):not(.hp__resumen) {
+    color: var(--tinta-suave);
+  }
+
+  .hp__datos {
+    display: grid;
+    gap: 14px;
+    margin: 28px 0 0;
+    padding-top: 20px;
+    border-top: 1px solid var(--linea);
+  }
+
+  .hp__datos dt {
+    font-size: 0.8125rem;
+    color: var(--gris);
+  }
+
+  .hp__datos dd {
+    margin: 4px 0 0;
+  }
+
+  .hp__enlaces {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 24px;
+  }
+
+  /* ---------- Collage ---------- */
+  .hp__collage {
+    position: relative;
+    padding: 40px 0 120px;
+  }
+
+  /* En una columna, la hoja abre con lo visual y después el texto */
+  @media (max-width: 979px) {
+    .hp__collage {
+      order: -1;
+      width: min(100%, 560px);
+      justify-self: center;
+      padding-bottom: 100px;
+    }
+  }
+
+  .hp__collage :global(.hp__v1) {
+    width: 92%;
+  }
+
+  .hp__collage :global(.hp__v2) {
+    position: absolute;
+    right: 0;
+    bottom: 24px;
+    width: 46%;
+  }
+
+  .hp__collage :global(.hp__nota) {
+    position: absolute;
+    top: -14px;
+    right: 0;
+  }
+
+  .hp__carpeta {
+    position: absolute;
+    left: 4%;
+    bottom: 0;
+    rotate: -4deg;
+  }
+
+  .hp__collage img {
+    width: 100%;
+    height: auto;
+  }
+
+  /* ---------- Composiciones (placeholders hasta tener capturas) ---------- */
+  .mk {
+    position: relative;
+    overflow: hidden;
+    font-family: var(--f-texto);
+  }
+
+  /* Nodo: panel de la app */
+  .mk--nodo-a {
+    aspect-ratio: 4 / 3;
+    background: #f6f6f8;
+    padding: 6% 7%;
+    display: flex;
+    flex-direction: column;
+    gap: 6%;
+  }
+  .nodo-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+  .nodo-top b {
+    font-size: clamp(1.25rem, 3vw, 1.75rem);
+    letter-spacing: -0.04em;
+  }
+  .nodo-top span {
+    font-size: 0.75rem;
+    color: var(--gris);
+  }
+  .nodo-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .nodo-stats div {
+    background: #fff;
+    border-radius: 10px;
+    padding: 8px 10px;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
+  }
+  .nodo-stats div:first-child {
+    background: var(--rosa);
+  }
+  .nodo-stats small {
+    display: block;
+    font-size: 0.6875rem;
+    color: var(--tinta-suave);
+  }
+  .nodo-stats strong {
+    font-size: clamp(1.125rem, 2.6vw, 1.5rem);
+    font-weight: 500;
+    letter-spacing: -0.03em;
+  }
+  .nodo-lista {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 6px;
+    font-size: 0.8125rem;
+  }
+  .nodo-lista li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #fff;
+    border-radius: 8px;
+    padding: 7px 10px;
+  }
+  .nodo-lista i {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--azul);
+  }
+  .nodo-lista em {
+    margin-left: auto;
+    font-style: normal;
+    color: var(--gris);
+  }
+
+  .mk--nodo-b {
+    background: #fff;
+    padding: 10% 8%;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .burbuja {
+    margin: 0;
+    font-size: 0.75rem;
+    line-height: 1.3;
+    padding: 6px 10px;
+    border-radius: 14px;
+    max-width: 85%;
+  }
+  .burbuja--gris {
+    background: #e9e9eb;
+    align-self: flex-start;
+  }
+  .burbuja--azul {
+    background: var(--azul);
+    color: #fff;
+    align-self: flex-end;
+  }
+
+  /* Karaoke: afiche editorial crema + estrella magenta */
+  .mk--karaoke-a {
+    aspect-ratio: 4 / 3;
+    background: #f3ead6;
+    padding: 6% 7%;
+  }
+  .k-titulo {
+    margin: 0;
+    font-size: clamp(2.25rem, 6.5vw, 3.75rem);
+    font-weight: 500;
+    line-height: 0.85;
+    letter-spacing: -0.06em;
+    text-transform: uppercase;
+    color: #111;
+    position: relative;
+  }
+  .k-estrella {
+    position: absolute;
+    right: 6%;
+    top: 4%;
+    font-size: clamp(5rem, 14vw, 8rem);
+    line-height: 1;
+    color: #e0218a;
+    rotate: 12deg;
+  }
+  .k-letra {
+    position: absolute;
+    left: 7%;
+    bottom: 7%;
+    margin: 0;
+    font-size: 0.8125rem;
+  }
+  .k-letra mark {
+    background: #e0218a;
+    color: #fff;
+    padding: 0 4px;
+  }
+  .k-trama {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 45%;
+    height: 45%;
+    background-image: radial-gradient(#111 28%, transparent 31%);
+    background-size: 9px 9px;
+    opacity: 0.18;
+  }
+
+  .mk--karaoke-b {
+    background: #111;
+    color: #f3ead6;
+    padding: 12% 10%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .mk--karaoke-b small {
+    font-size: 0.75rem;
+    opacity: 0.8;
+  }
+  .mk--karaoke-b strong {
+    font-size: clamp(2.5rem, 7vw, 3.5rem);
+    font-weight: 500;
+    letter-spacing: -0.05em;
+    line-height: 1;
+    color: #ff7cc0;
+  }
+  .k-boton {
+    margin-top: 8px;
+    font-size: 0.75rem;
+    background: #f3ead6;
+    color: #111;
+    border-radius: 999px;
+    padding: 5px 10px;
+  }
+
+  /* Rediseño de marca: sobrio y caro */
+  .mk--marca-a {
+    aspect-ratio: 4 / 3;
+    background: #2a1a14;
+    color: #efe4d2;
+    display: grid;
+    place-content: center;
+    text-align: center;
+    gap: 12px;
+  }
+  .m-marca {
+    margin: 0;
+    font-family: "Didot", "Bodoni 72", Georgia, serif;
+    font-style: italic;
+    font-size: clamp(2.75rem, 8vw, 4.5rem);
+    line-height: 1;
+  }
+  .m-filete {
+    display: block;
+    width: 60px;
+    height: 1px;
+    margin-inline: auto;
+    background: #b8975a;
+  }
+  .m-bajada {
+    margin: 0;
+    font-size: 0.6875rem;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: #b8975a;
+  }
+
+  .mk--marca-b {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    aspect-ratio: 16 / 9;
+  }
+</style>
