@@ -1,9 +1,21 @@
 ---
-// Nota escrita a mano con una flechita dibujada.
-// `flecha` indica hacia dónde apunta.
+// Nota escrita a mano con una flechita dibujada que apunta a lo que comenta.
+// `flecha` indica hacia dónde apunta. La flecha se dibuja una sola vez
+// (apuntando a la izquierda) y se gira con CSS según la dirección.
+
+type Direccion =
+  | "izquierda"
+  | "derecha"
+  | "arriba"
+  | "abajo"
+  | "arriba-izquierda"
+  | "arriba-derecha"
+  | "abajo-izquierda"
+  | "abajo-derecha"
+  | "ninguna";
 
 interface Props {
-  flecha?: "izquierda" | "derecha" | "abajo" | "ninguna";
+  flecha?: Direccion;
   giro?: number;
   class?: string;
 }
@@ -14,15 +26,15 @@ const { flecha = "izquierda", giro = -3, class: clase = "" } = Astro.props;
 <p class:list={["nota mano", `nota--${flecha}`, clase]} style={`--giro: ${giro}deg`}>
   {
     flecha !== "ninguna" && (
-      <svg class="nota__flecha" viewBox="0 0 90 50" aria-hidden="true">
+      <svg class="nota__flecha" viewBox="0 0 90 40" aria-hidden="true">
         <path
-          d="M84 8c-10 2-22 4-30 12-6 6-2 14 5 12 8-2 6-14-4-16-14-3-30 8-44 22"
+          d="M86 24C72 12 58 8 53 17c-4 8 7 11 9 3 2-8-11-12-25-6-11 5-20 6-30 6"
           fill="none"
           stroke="currentColor"
           stroke-width="2.4"
           stroke-linecap="round"
         />
-        <path d="M18 30l-7 9 11-1" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+        <path d="M15 12L6 20l10 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
       </svg>
     )
   }
@@ -38,7 +50,7 @@ const { flecha = "izquierda", giro = -3, class: clase = "" } = Astro.props;
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    max-width: 16ch;
+    max-width: 18ch;
   }
 
   .nota__flecha {
@@ -46,19 +58,61 @@ const { flecha = "izquierda", giro = -3, class: clase = "" } = Astro.props;
     flex: none;
   }
 
+  /* --- Horizontal --- */
   .nota--derecha {
     flex-direction: row-reverse;
   }
   .nota--derecha .nota__flecha {
-    scale: -1 1;
+    transform: scaleX(-1);
   }
 
+  /* --- Vertical: la flecha va arriba o abajo del texto --- */
+  .nota--arriba,
+  .nota--abajo {
+    flex-direction: column;
+    gap: 0;
+  }
   .nota--abajo {
     flex-direction: column-reverse;
-    align-items: flex-start;
+  }
+  .nota--arriba .nota__flecha,
+  .nota--abajo .nota__flecha {
+    width: 56px;
+    /* al girarla 90° necesita más alto que el que ocupa acostada */
+    margin-block: 14px;
+  }
+  .nota--arriba .nota__flecha {
+    transform: rotate(90deg);
   }
   .nota--abajo .nota__flecha {
-    rotate: -60deg;
-    width: 52px;
+    transform: rotate(-90deg);
+  }
+
+  /* --- Diagonales --- */
+  .nota--arriba-izquierda {
+    align-items: flex-start;
+  }
+  .nota--arriba-izquierda .nota__flecha {
+    transform: rotate(40deg);
+  }
+  .nota--abajo-izquierda {
+    align-items: flex-end;
+  }
+  .nota--abajo-izquierda .nota__flecha {
+    transform: rotate(-40deg);
+  }
+  .nota--arriba-derecha {
+    flex-direction: row-reverse;
+    align-items: flex-start;
+  }
+  .nota--arriba-derecha .nota__flecha {
+    transform: scaleX(-1) rotate(40deg);
+  }
+  .nota--abajo-derecha {
+    flex-direction: row-reverse;
+    align-items: flex-end;
+  }
+  .nota--abajo-derecha .nota__flecha {
+    transform: scaleX(-1) rotate(-40deg);
   }
 </style>
