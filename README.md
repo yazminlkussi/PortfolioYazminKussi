@@ -3,7 +3,7 @@
 Examen final de **Programación Multimedial IV**.
 
 > **URL publicada:** _(completar después del deploy)_
-> **Repositorio:** _(completar)_
+> **Repositorio:** https://github.com/yazminlkussi/PortfolioYazminKussi
 
 ## La propuesta
 
