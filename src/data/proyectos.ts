@@ -24,7 +24,7 @@ export const proyectos: Proyecto[] = [
   {
     slug: "nodo",
     titulo: "Nodo",
-    tipo: "Web app responsive · UX/UI",
+    tipo: "Web app responsive · proyecto propio",
     anio: "2026",
     resumen:
       "Una web app que une la gestión interna de una institución con la vida comunitaria de sus socios.",
@@ -32,7 +32,8 @@ export const proyectos: Proyecto[] = [
       "NODO es una solución digital pensada para nuclear lo operativo y lo social de distintas instituciones: clubes deportivos, centros culturales, movimientos juveniles e instituciones sociales.",
       "El desafío fue juntar dos mundos que suelen vivir separados: la gestión administrativa interna (cuotas, actividades, inscripciones) y la experiencia comunitaria de quienes forman parte. Un mismo lugar para organizar y para pertenecer.",
     ],
-    rol: "Diseño UX/UI y desarrollo",
+    rol: "Todo: la idea, el diseño UX/UI y el desarrollo",
+    equipo: "Proyecto individual, de punta a punta",
     herramientas: ["Figma", "Web app responsive"],
     nota: "gestión + comunidad",
     portada: "nodo",
