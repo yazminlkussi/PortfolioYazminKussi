@@ -16,7 +16,7 @@ export interface Proyecto {
   nota?: string; // nota escrita "a mano" sobre el recorte
   portada: Portada; // qué composición CSS se usa mientras no haya capturas
   archivos: [string, string]; // nombres que aparecen en las barras de las ventanas
-  imagenes?: { src: string; alt: string }[]; // capturas reales en /public (reemplazan las composiciones)
+  imagenes?: { src: string; alt: string; ancho?: number; alto?: number }[]; // capturas reales en /public (reemplazan las composiciones)
   enlaces?: { texto: string; url: string }[];
 }
 
@@ -37,7 +37,16 @@ export const proyectos: Proyecto[] = [
     herramientas: ["Figma", "Web app responsive"],
     nota: "gestión + comunidad",
     portada: "nodo",
-    archivos: ["nodo_app.png", "comunidad.png"],
+    archivos: ["nodo_login.png", "comunidad.png"],
+    enlaces: [{ texto: "Ver Nodo en vivo", url: "https://nodo-wheat.vercel.app/" }],
+    imagenes: [
+      {
+        src: "/proyectos/nodo-login.png",
+        alt: "Pantalla de ingreso de Nodo: logo, la frase \"Experiencia digital para comunidades\" y un formulario para ingresar o crear cuenta, sobre fondo violeta.",
+        ancho: 751,
+        alto: 791,
+      },
+    ],
   },
   {
     slug: "karaoke",

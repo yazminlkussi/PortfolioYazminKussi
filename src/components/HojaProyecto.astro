@@ -69,7 +69,7 @@ const [img1, img2] = p.imagenes ?? [];
       <VentanaMac titulo={p.archivos[0]} giro={-1.5} class="hp__v1">
         {
           img1 ? (
-            <img src={img1.src} alt={img1.alt} loading="lazy" />
+            <img src={img1.src} alt={img1.alt} width={img1.ancho} height={img1.alto} loading="lazy" />
           ) : (
             <div class={`mk mk--${p.portada}-a`} aria-hidden="true">
               {p.portada === "nodo" && (
@@ -113,7 +113,7 @@ const [img1, img2] = p.imagenes ?? [];
       <VentanaMac titulo={p.archivos[1]} giro={3} class="hp__v2">
         {
           img2 ? (
-            <img src={img2.src} alt={img2.alt} loading="lazy" />
+            <img src={img2.src} alt={img2.alt} width={img2.ancho} height={img2.alto} loading="lazy" />
           ) : (
             <div class={`mk mk--${p.portada}-b`} aria-hidden="true">
               {p.portada === "nodo" && (
@@ -351,7 +351,8 @@ const [img1, img2] = p.imagenes ?? [];
     align-self: flex-start;
   }
   .burbuja--azul {
-    background: var(--azul);
+    /* violeta de la identidad de Nodo */
+    background: #5b50c4;
     color: #fff;
     align-self: flex-end;
   }
