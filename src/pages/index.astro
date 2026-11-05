@@ -131,7 +131,7 @@ const stickers = [
       {proyectos.map((p, i) => <HojaProyecto proyecto={p} numero={i + 1} />)}
 
       <!-- Inspo -->
-      <section class="hoja" data-hoja="inspo" data-nombre="inspo" aria-labelledby="inspo-titulo">
+      <section class="hoja inspo" data-hoja="inspo" data-nombre="inspo" aria-labelledby="inspo-titulo">
         <p class="etiqueta">inspo</p>
         <h2 class="hoja__titulo" id="inspo-titulo">lo que me <Seleccion cursor={false}>inspira</Seleccion></h2>
         <p class="hoja__bajada">
@@ -189,6 +189,25 @@ const stickers = [
     max-width: 56ch;
     color: var(--tinta-suave);
     margin: 18px 0 0;
+  }
+
+  /* ---------- Inspo: tablero que llena la hoja ---------- */
+  @media (min-width: 1100px) and (min-height: 640px) {
+    .hoja.inspo {
+      display: flex;
+      flex-direction: column;
+      height: calc(100svh - 96px);
+    }
+
+    .inspo .hoja__titulo {
+      font-size: clamp(2.25rem, 6svh, 3.5rem);
+      margin-top: 8px;
+    }
+
+    .inspo .hoja__bajada {
+      margin-top: 10px;
+      font-size: 0.9375rem;
+    }
   }
 
   /* ---------- Tapa ---------- */
