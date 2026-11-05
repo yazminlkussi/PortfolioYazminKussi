@@ -383,6 +383,28 @@ const dos = (n: number) => String(n).padStart(2, "0");
       translate: -8px 0;
     }
   }
+
+  /* Escritorio con altura razonable: el cuaderno entero entra en la pantalla,
+     sin scroll. La hoja ocupa el alto disponible y el pie queda pegado abajo. */
+  @media (min-width: 1100px) and (min-height: 640px) {
+    .cuaderno {
+      padding-top: 18px;
+      padding-bottom: 14px;
+    }
+
+    .cuaderno__indice {
+      top: 58px;
+    }
+
+    .cuaderno__hojas :global(.hoja) {
+      min-height: calc(100svh - 96px);
+      padding-block: clamp(24px, 4svh, 48px);
+    }
+
+    .cuaderno__pie {
+      margin-top: 12px;
+    }
+  }
 </style>
 
 <script>
