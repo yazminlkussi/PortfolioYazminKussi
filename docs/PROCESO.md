@@ -59,7 +59,7 @@ Decisiones que tomé a partir de eso:
 - Las capturas de proyectos van dentro de **ventanas de macOS** que hacen de marco de foto.
 - Los stickers de la mesa ahora son **stickers de interfaz** (carpeta, burbuja, archivo, menú, switch,
   cursor).
-- Sumé el **interruptor formal / risueña** en "sobre mí": así el switch no es solo decorativo, sino que
+- Sumé el **interruptor profesional / personal** en "sobre mí": así el switch no es solo decorativo, sino que
   cambia lo que leés.
 
 Lo que se mantuvo de la primera versión: la API del museo, los estados, la mesa con física y el criterio

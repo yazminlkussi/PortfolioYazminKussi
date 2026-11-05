@@ -21,7 +21,7 @@ Las hojas del cuaderno:
 | N° | Hoja | Qué cuenta |
 | --- | --- | --- |
 | 01 | **tapa** | Quién soy, con carpetas que llevan a cada proyecto |
-| 02 | **sobre mí** | Mi presentación, con un interruptor que cambia el tono (formal ↔ risueña) |
+| 02 | **sobre mí** | Mi presentación, con un interruptor que cambia el tono (profesional ↔ personal) |
 | 03–05 | **nodo, karaoke, dunkin** | Una hoja por proyecto: texto, rol, herramientas y collage visual |
 | 06 | **inspo** | Moodboard vivo con piezas de un museo real (API) |
 | 07 | **mesa** | Mesa de collage: quien visita arma su propia página |
@@ -72,7 +72,7 @@ src/
 ├── components/
 │   ├── Cuaderno.astro         hojas, índice y navegación (pasar la hoja)
 │   ├── HojaProyecto.astro     una hoja por proyecto (texto + collage)
-│   ├── InterruptorTono.astro  switch formal / risueña en "sobre mí"
+│   ├── InterruptorTono.astro  switch profesional / personal en "sobre mí"
 │   ├── Moodboard.astro        API del museo con estados
 │   ├── MesaDeCollage.astro    stickers arrastrables con física
 │   ├── DialogoContacto.astro  diálogo "Nuevo proyecto" → mail
@@ -102,7 +102,7 @@ src/
    con fricción al soltar, inclinación según la velocidad con un resorte y rebote suave en los bordes.
    Escucha `mesa:pegar` y guarda el collage en `localStorage`. Como vive en una hoja que empieza oculta,
    recién se arma la primera vez que tiene tamaño (`ResizeObserver`).
-5. **`InterruptorTono`**: un `<button role="switch">` que cambia entre la versión formal y la risueña de
+5. **`InterruptorTono`**: un `<button role="switch">` que cambia entre la versión profesional y la personal de
    mi presentación.
 6. **`DialogoContacto`**: valida que escribas algo y abre tu mail con el texto cargado (`mailto:`).
 

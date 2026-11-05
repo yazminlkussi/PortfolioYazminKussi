@@ -1,17 +1,17 @@
 ---
 // Un interruptor tipo iOS que cambia el TONO del texto "sobre mí":
-// versión formal (para un CV) o versión risueña (como hablo yo).
+// versión profesional (para un CV) o versión personal (como hablo yo).
 // Cambia la lectura del contenido, no solo la decoración.
 // Usa un <button role="switch"> para que sea accesible con teclado y lector de pantalla.
 ---
 
 <div class="tono" data-tono="risuena">
   <div class="tono__control">
-    <span class="tono__lado" aria-hidden="true">formal</span>
-    <button class="tono__switch" type="button" role="switch" aria-checked="true" aria-label="Modo risueño" data-switch>
+    <span class="tono__lado" aria-hidden="true">profesional</span>
+    <button class="tono__switch" type="button" role="switch" aria-checked="true" aria-label="Versión personal" data-switch>
       <span class="tono__perilla"></span>
     </button>
-    <span class="tono__lado" aria-hidden="true">risueña</span>
+    <span class="tono__lado" aria-hidden="true">personal</span>
   </div>
 
   <div class="tono__textos" aria-live="polite">
@@ -91,7 +91,7 @@
     sw.addEventListener("click", () => {
       const risuena = sw.getAttribute("aria-checked") !== "true";
       sw.setAttribute("aria-checked", String(risuena));
-      sw.setAttribute("aria-label", risuena ? "Modo risueño" : "Modo formal");
+      sw.setAttribute("aria-label", risuena ? "Versión personal" : "Versión profesional");
       const elegida = risuena ? "risuena" : "formal";
       raiz.dataset.tono = elegida;
       versiones.forEach((v) => (v.hidden = v.dataset.version !== elegida));
