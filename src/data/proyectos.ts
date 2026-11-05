@@ -66,6 +66,7 @@ export const proyectos: Proyecto[] = [
     nota: "viví tu era popstar ★",
     portada: "karaoke",
     archivos: ["escenario.mov", "celu_fila.png"],
+    enlaces: [{ texto: "Ver el karaoke en vivo", url: "https://karaoke-beta-azure.vercel.app/" }],
   },
   {
     slug: "dunkin",
