@@ -1,14 +1,14 @@
 ---
-// El cuaderno: contiene las hojas y resuelve la navegación entre ellas.
+// El cuaderno: contiene las hojas y resuelve cómo se pasan.
 //
-// Cómo se pasa de hoja:
-//   - Pestañas del índice (al costado en escritorio, arriba en celular)
-//   - Botones anterior / siguiente al pie
-//   - Flechas del teclado ← →   (sin animación: el teclado tiene que ser instantáneo)
-//   - Deslizar con el dedo en el celular
-//   - La URL guarda la hoja (#nodo, #mesa...): se puede compartir y el botón "atrás" funciona
+// La forma principal es AGARRAR LA HOJA: con el mouse o el dedo arrastrás la
+// hoja hacia la izquierda (siguiente) o hacia la derecha (anterior) y la hoja
+// gira siguiendo tu mano, en 3D, sobre el espiral. Si la soltás pasada la mitad
+// (o con un movimiento rápido), termina de darse vuelta; si no, vuelve a su lugar.
 //
-// Cada hoja es un <section data-hoja="id" data-nombre="..."> que viene por el <slot />.
+// Alternativas (accesibilidad, WCAG 2.2 "dragging movements"):
+//   - pestañas del índice, flechas ← → del teclado y dos botones chiquitos al pie.
+// La URL guarda la hoja (#nodo, #mesa...): se puede compartir y "atrás" funciona.
 
 interface Pagina {
   id: string;
@@ -20,7 +20,7 @@ interface Props {
 }
 
 const { paginas } = Astro.props;
-const anillos = Array.from({ length: 16 });
+const dos = (n: number) => String(n).padStart(2, "0");
 ---
 
 <div class="cuaderno" data-cuaderno>
@@ -29,8 +29,8 @@ const anillos = Array.from({ length: 16 });
       {
         paginas.map((p, i) => (
           <li>
-            <a href={`#${p.id}`} data-ir={p.id} aria-current={i === 0 ? "page" : undefined}>
-              <span class="num">{String(i + 1).padStart(2, "0")}</span> {p.nombre}
+            <a href={`#${p.id}`} data-ir={i} aria-current={i === 0 ? "page" : undefined}>
+              <span class="num">{dos(i + 1)}</span> {p.nombre}
             </a>
           </li>
         ))
@@ -38,21 +38,26 @@ const anillos = Array.from({ length: 16 });
     </ol>
   </nav>
 
-  <div class="cuaderno__cuerpo">
-    <div class="cuaderno__espiral" aria-hidden="true">
-      {anillos.map(() => <i />)}
-    </div>
+  <div class="cuaderno__libro">
     <div class="cuaderno__hojas" data-hojas>
       <slot />
+      <!-- El dorso de la hoja que se está dando vuelta -->
+      <div class="lamina" data-lamina hidden aria-hidden="true"></div>
+      <!-- La sombra que la hoja proyecta sobre la de abajo -->
+      <div class="sombra-bajo" data-sombra aria-hidden="true"></div>
+      <!-- Esquina doblada: invita a agarrar la hoja -->
+      <div class="esquina" data-esquina aria-hidden="true"></div>
     </div>
+    <div class="cuaderno__espiral" aria-hidden="true"></div>
   </div>
 
   <div class="cuaderno__pie">
-    <button class="boton" type="button" data-anterior aria-label="Hoja anterior">← <span class="pie__txt">anterior</span></button>
-    <p class="cuaderno__contador" data-contador>01 / {String(paginas.length).padStart(2, "0")}</p>
-    <button class="boton boton--azul" type="button" data-siguiente>
-      <span data-siguiente-txt>siguiente</span> →
-    </button>
+    <button class="flechita" type="button" data-anterior aria-label="Hoja anterior">←</button>
+    <p class="cuaderno__contador">
+      <span data-contador>01 / {dos(paginas.length)}</span>
+      <span class="cuaderno__pista mano" aria-hidden="true">agarrá la hoja y pasala</span>
+    </p>
+    <button class="flechita" type="button" data-siguiente aria-label="Hoja siguiente">→</button>
   </div>
 
   <p class="sr-only" aria-live="polite" data-anuncio-hoja></p>
@@ -60,17 +65,17 @@ const anillos = Array.from({ length: 16 });
 
 <style>
   .cuaderno {
-    --ancho-espiral: 34px;
+    --espiral: 46px;
     position: relative;
     width: min(100%, 1200px);
     margin-inline: auto;
-    padding: 12px var(--gutter) 32px;
+    padding: 12px var(--gutter) 28px;
   }
 
   /* ---------- Índice (pestañas) ---------- */
   .cuaderno__indice ol {
     list-style: none;
-    margin: 0 0 14px;
+    margin: 0 0 18px;
     padding: 2px 2px 6px;
     display: flex;
     gap: 6px;
@@ -118,82 +123,65 @@ const anillos = Array.from({ length: 16 });
     }
   }
 
-  /* ---------- Cuerpo: espiral + hojas ---------- */
-  .cuaderno__cuerpo {
+  /* ---------- El libro: tapa + hojas + espiral ---------- */
+  .cuaderno__libro {
     position: relative;
-    display: grid;
-    grid-template-columns: var(--ancho-espiral) 1fr;
-  }
-
-  .cuaderno__espiral {
-    position: relative;
-    z-index: 3;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-around;
-    padding-block: 18px;
-  }
-
-  /* Cada anillo: un alambre que cruza el borde, más el agujero en la hoja */
-  .cuaderno__espiral i {
-    position: relative;
-    display: block;
-    width: 46px;
-    height: 9px;
-    border-radius: 6px;
-    background: linear-gradient(#cfcfcf, #7a7a7a 55%, #b5b5b5);
-    box-shadow: 0 2px 2px rgb(0 0 0 / 0.18);
-  }
-
-  .cuaderno__espiral i::after {
-    content: "";
-    position: absolute;
-    right: 2px;
-    top: 50%;
-    width: 9px;
-    height: 9px;
-    translate: 0 -50%;
-    border-radius: 50%;
-    background: var(--fondo);
-    box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.35);
-    z-index: -1;
+    padding-left: calc(var(--espiral) / 2);
   }
 
   .cuaderno__hojas {
     position: relative;
-    perspective: 2200px;
-    /* Para que deslizar horizontal con el dedo llegue a nuestro código */
+    perspective: 3200px;
+    perspective-origin: 30% 50%;
+    /* Deslizar horizontal con el dedo llega a nuestro código; vertical sigue scrolleando */
     touch-action: pan-y;
   }
 
-  /* Bordes de hojas apiladas detrás de la actual */
-  .cuaderno__hojas::before,
+  /* Tapa trasera de cartón rosa que asoma por debajo de las hojas */
+  .cuaderno__hojas::before {
+    content: "";
+    position: absolute;
+    inset: -8px -12px -14px -6px;
+    border-radius: 6px 18px 18px 6px;
+    background:
+      repeating-linear-gradient(45deg, rgb(255 255 255 / 0.07) 0 2px, transparent 2px 5px),
+      repeating-linear-gradient(-45deg, rgb(0 0 0 / 0.04) 0 2px, transparent 2px 5px),
+      #f1b3c6;
+    box-shadow:
+      0 2px 3px rgb(0 0 0 / 0.12),
+      0 30px 60px -24px rgb(60 30 40 / 0.45);
+  }
+
+  /* Canto del bloque de hojas: muchas hojas apiladas */
   .cuaderno__hojas::after {
     content: "";
     position: absolute;
     inset: 0;
-    border-radius: 4px 14px 14px 4px;
+    border-radius: 3px 12px 12px 3px;
     background: var(--papel-2);
-    box-shadow: var(--sombra-hoja);
-  }
-  .cuaderno__hojas::before {
-    translate: 6px 6px;
-  }
-  .cuaderno__hojas::after {
-    translate: 3px 3px;
-    background: var(--papel);
+    box-shadow:
+      1px 1px 0 #d9d4c8,
+      2px 2px 0 #f4f1ea,
+      3px 3px 0 #d6d1c4,
+      4px 4px 0 #f1eee6,
+      5px 5px 0 #d3cec0,
+      6px 6px 0 #eeeae1,
+      7px 7px 0 #cfc9bb;
   }
 
-  /* Cada hoja (viene del slot) */
+  /* Cada hoja (viene del slot): papel con puntitos y sombra suave junto al espiral */
   .cuaderno__hojas :global(.hoja) {
     position: relative;
     z-index: 1;
     min-height: min(80svh, 780px);
-    padding: clamp(24px, 5vw, 64px) clamp(20px, 5vw, 64px) clamp(32px, 5vw, 64px);
-    padding-left: clamp(28px, 5vw, 72px);
-    background: var(--papel);
-    border-radius: 4px 14px 14px 4px;
-    box-shadow: var(--sombra-hoja);
+    padding: clamp(24px, 5vw, 64px) clamp(20px, 5vw, 64px) clamp(40px, 5vw, 72px);
+    padding-left: clamp(36px, 5.5vw, 80px);
+    border-radius: 3px 12px 12px 3px;
+    background:
+      linear-gradient(90deg, rgb(0 0 0 / 0.08), rgb(0 0 0 / 0.02) 24px, transparent 44px),
+      radial-gradient(rgb(0 0 0 / 0.075) 1px, transparent 1.4px) 0 0 / 22px 22px,
+      var(--papel);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
     transform-origin: left center;
     backface-visibility: hidden;
   }
@@ -207,12 +195,105 @@ const anillos = Array.from({ length: 16 });
     outline: none;
   }
 
-  /* La hoja que está "volando" se pone encima, alineada arriba */
+  /* La hoja que se está dando vuelta: encima de todo, alineada arriba */
   .cuaderno__hojas :global(.hoja--volando) {
     position: absolute;
     inset: 0 0 auto 0;
-    z-index: 2;
+    z-index: 4;
+    will-change: transform;
+  }
+
+  /* Luz y sombra sobre la hoja que gira (más oscura cuanto más se levanta) */
+  .cuaderno__hojas :global(.hoja--volando::after) {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 50;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(
+      90deg,
+      rgb(0 0 0 / calc(var(--luz, 0) * 0.28)),
+      rgb(0 0 0 / calc(var(--luz, 0) * 0.06)) 55%,
+      rgb(255 255 255 / calc(var(--luz, 0) * 0.25))
+    );
+  }
+
+  /* Dorso de la hoja: papel liso que se ve cuando pasa los 90° */
+  .lamina {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 4;
+    border-radius: 3px 12px 12px 3px;
+    transform-origin: left center;
+    backface-visibility: hidden;
+    pointer-events: none;
     will-change: transform, opacity;
+    background:
+      linear-gradient(270deg, rgb(0 0 0 / 0.1), transparent 50px),
+      radial-gradient(rgb(0 0 0 / 0.06) 1px, transparent 1.4px) 0 0 / 22px 22px,
+      var(--papel-2);
+    box-shadow: 0 10px 30px -10px rgb(0 0 0 / 0.3);
+  }
+
+  .sombra-bajo {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    border-radius: 3px 12px 12px 3px;
+    background: linear-gradient(90deg, rgb(0 0 0 / 0.3), rgb(0 0 0 / 0.08) 35%, transparent 70%);
+    opacity: 0;
+  }
+
+  /* Esquina doblada abajo a la derecha */
+  .esquina {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    z-index: 5;
+    width: var(--doblez, 34px);
+    height: var(--doblez, 34px);
+    border-bottom-right-radius: 12px;
+    background: linear-gradient(315deg, #e2ddd2 0 50%, transparent 50%),
+      linear-gradient(135deg, #fbfaf6 0 50%, transparent 50%);
+    background-blend-mode: normal;
+    filter: drop-shadow(-2px -2px 3px rgb(0 0 0 / 0.12));
+    pointer-events: none;
+    transition: width 220ms var(--ease-out), height 220ms var(--ease-out);
+  }
+
+  .cuaderno__hojas:has(.hoja--volando) .esquina,
+  .cuaderno[data-ultima] .esquina {
+    opacity: 0;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .cuaderno__hojas:hover .esquina {
+      --doblez: 48px;
+    }
+  }
+
+  /* Mientras arrastrás: cursor de "agarrando" y sin seleccionar texto */
+  .cuaderno__hojas[data-arrastrando] {
+    cursor: grabbing;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* ---------- Espiral (doble alambre metálico) ---------- */
+  .cuaderno__espiral {
+    position: absolute;
+    top: 12px;
+    bottom: 12px;
+    left: 0;
+    width: var(--espiral);
+    z-index: 6;
+    pointer-events: none;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='46' height='26' viewBox='0 0 46 26'%3E%3Cdefs%3E%3ClinearGradient id='m' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23fdfdfd'/%3E%3Cstop offset='.45' stop-color='%23a9a9ad'/%3E%3Cstop offset='.7' stop-color='%23d8d8dc'/%3E%3Cstop offset='1' stop-color='%236f6f74'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cellipse cx='33.5' cy='13' rx='3.4' ry='3.8' fill='%2335332f'/%3E%3Cellipse cx='33.5' cy='13.6' rx='2.6' ry='2.8' fill='%23151412'/%3E%3Cpath d='M34 9.6C25 4.6 9 4.2 6.5 9.8S20 18.2 32.6 15.8' fill='none' stroke='%23000' stroke-opacity='.22' stroke-width='3.4' stroke-linecap='round' transform='translate(1.2 1.6)'/%3E%3Cpath d='M34 9.6C25 4.6 9 4.2 6.5 9.8S20 18.2 32.6 15.8' fill='none' stroke='url(%23m)' stroke-width='2.8' stroke-linecap='round'/%3E%3C/svg%3E")
+      0 0 / 46px 26px repeat-y;
   }
 
   /* ---------- Pie ---------- */
@@ -221,33 +302,64 @@ const anillos = Array.from({ length: 16 });
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    margin-top: 20px;
-    padding-left: var(--ancho-espiral);
+    margin-top: 26px;
+    padding-left: calc(var(--espiral) / 2);
+  }
+
+  .flechita {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid var(--chrome-borde);
+    background: color-mix(in srgb, var(--papel) 70%, transparent);
+    color: var(--tinta-suave);
+    font-size: 1.125rem;
+    cursor: pointer;
+    transition: transform 160ms var(--ease-out), background-color 160ms ease, opacity 160ms ease;
+  }
+
+  .flechita:active {
+    transform: scale(0.94);
+  }
+
+  .flechita[aria-disabled="true"] {
+    opacity: 0.35;
+    cursor: default;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .flechita:not([aria-disabled="true"]):hover {
+      background: var(--papel);
+      color: var(--tinta);
+    }
   }
 
   .cuaderno__contador {
     margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
     font-size: 0.875rem;
     font-variant-numeric: tabular-nums;
     color: var(--tinta-suave);
   }
 
-  @media (max-width: 520px) {
-    .pie__txt {
-      display: none;
-    }
+  .cuaderno__pista {
+    font-size: 1.125rem;
+    color: var(--tinta-suave);
   }
 
   /* ---------- Escritorio: índice como pestañas al costado ---------- */
   @media (min-width: 1100px) {
     .cuaderno {
-      padding-right: 150px;
+      padding-right: 156px;
       padding-top: 32px;
     }
 
     .cuaderno__indice {
       position: absolute;
-      top: 72px;
+      top: 76px;
       right: 22px;
       width: 132px;
     }
@@ -258,7 +370,6 @@ const anillos = Array.from({ length: 16 });
       overflow: visible;
     }
 
-    /* Pestañas que "salen" del costado de la hoja */
     .cuaderno__indice a {
       width: 100%;
       justify-content: flex-start;
@@ -276,186 +387,324 @@ const anillos = Array.from({ length: 16 });
 
 <script>
   const raiz = document.querySelector<HTMLElement>("[data-cuaderno]")!;
-  const hojas = [...raiz.querySelectorAll<HTMLElement>("[data-hoja]")];
+  const zona = raiz.querySelector<HTMLElement>("[data-hojas]")!;
+  const hojas = [...zona.querySelectorAll<HTMLElement>("[data-hoja]")];
+  const lamina = zona.querySelector<HTMLElement>("[data-lamina]")!;
+  const sombra = zona.querySelector<HTMLElement>("[data-sombra]")!;
+  const esquina = zona.querySelector<HTMLElement>("[data-esquina]")!;
   const links = [...raiz.querySelectorAll<HTMLAnchorElement>("[data-ir]")];
   const btnAnterior = raiz.querySelector<HTMLButtonElement>("[data-anterior]")!;
   const btnSiguiente = raiz.querySelector<HTMLButtonElement>("[data-siguiente]")!;
-  const txtSiguiente = raiz.querySelector<HTMLElement>("[data-siguiente-txt]")!;
   const contador = raiz.querySelector<HTMLElement>("[data-contador]")!;
   const anuncio = raiz.querySelector<HTMLElement>("[data-anuncio-hoja]")!;
-  const zonaHojas = raiz.querySelector<HTMLElement>("[data-hojas]")!;
   const reducido = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const total = hojas.length;
   const dos = (n: number) => String(n).padStart(2, "0");
+  const limitar = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
+  const aGrados = (rad: number) => (rad * 180) / Math.PI;
   let actual = 0;
-  let siguienteSinAnimar = false;
 
-  // La animación en curso y cómo dejar todo prolijo si se interrumpe
-  let pendiente: { anim: Animation; limpiar: () => void } | null = null;
-
-  function cerrarPendiente() {
-    if (!pendiente) return;
-    const p = pendiente;
-    pendiente = null;
-    p.anim.cancel();
-    p.limpiar();
+  // ============================================================
+  // 1. Dibujar una hoja girada un ángulo θ (0° = apoyada, 180° = dada vuelta)
+  // ============================================================
+  function dibujar(hoja: HTMLElement, theta: number) {
+    const rad = (theta * Math.PI) / 180;
+    // rotateY negativo: el borde derecho viene hacia vos y gira hacia la izquierda
+    hoja.style.transform = `rotateY(${-theta}deg)`;
+    hoja.style.setProperty("--luz", Math.sin(rad).toFixed(3));
+    // El dorso usa la misma rotación, pero espejado para mirar hacia atrás
+    lamina.style.transform = `rotateY(${-theta}deg) translateX(100%) rotateY(180deg)`;
+    // Cuando ya está casi acostada del otro lado, se desvanece (se fue para atrás)
+    lamina.style.opacity = String(limitar((180 - theta) / 50, 0, 1));
+    // Sombra sobre la hoja de abajo: máxima con la hoja parada
+    sombra.style.opacity = (Math.sin(rad) * 0.9).toFixed(3);
   }
 
-  function indiceDe(id: string) {
-    const i = hojas.findIndex((h) => h.dataset.hoja === id);
-    return i === -1 ? 0 : i;
+  // ============================================================
+  // 2. Un "giro": preparar qué hoja se mueve y cuál queda abajo
+  // ============================================================
+  interface Giro {
+    desde: number; // hoja que estaba a la vista
+    hasta: number; // hoja a la que vamos
+    movil: HTMLElement; // la hoja que gira
+    theta: number;
+    adelante: boolean;
   }
 
-  function actualizarUI() {
-    links.forEach((l, i) => {
-      if (i === actual) l.setAttribute("aria-current", "page");
-      else l.removeAttribute("aria-current");
-    });
-    // La pestaña activa siempre a la vista (en celular el índice scrollea)
-    const lista = links[actual]?.closest("ol");
-    if (lista && lista.scrollWidth > lista.clientWidth) {
-      lista.scrollTo({ left: links[actual].offsetLeft - 24, behavior: "smooth" });
+  let giro: Giro | null = null;
+  let animacion = 0; // id de requestAnimationFrame en curso
+
+  function empezarGiro(hasta: number): Giro {
+    const desde = actual;
+    const adelante = hasta > desde;
+    const sale = hojas[desde];
+    const entra = hojas[hasta];
+    entra.hidden = false;
+    // Adelante: gira la hoja actual y deja ver la siguiente.
+    // Atrás: la hoja anterior vuelve girando desde la izquierda y tapa la actual.
+    const movil = adelante ? sale : entra;
+    movil.classList.add("hoja--volando");
+    lamina.style.height = `${movil.offsetHeight}px`;
+    lamina.hidden = false;
+    const g: Giro = { desde, hasta, movil, theta: adelante ? 0 : 180, adelante };
+    dibujar(movil, g.theta);
+    return g;
+  }
+
+  function limpiarGiro(g: Giro, completo: boolean) {
+    const destino = completo ? g.hasta : g.desde;
+    hojas.forEach((h, i) => (h.hidden = i !== destino));
+    g.movil.classList.remove("hoja--volando");
+    g.movil.style.transform = "";
+    g.movil.style.removeProperty("--luz");
+    lamina.hidden = true;
+    sombra.style.opacity = "0";
+    if (completo) cambiarA(g.hasta);
+  }
+
+  // Termina el giro animando hasta el final (o de vuelta al principio)
+  function soltarGiro(g: Giro, completo: boolean, velocidad = 0) {
+    cancelAnimationFrame(animacion);
+    const final = completo === g.adelante ? 180 : 0;
+    const inicio = g.theta;
+    const falta = Math.abs(final - inicio);
+    if (reducido || falta < 0.5) {
+      limpiarGiro(g, completo);
+      giro = null;
+      return;
     }
-    contador.textContent = `${dos(actual + 1)} / ${dos(total)}`;
-    btnAnterior.style.visibility = actual === 0 ? "hidden" : "visible";
-    txtSiguiente.textContent = actual === total - 1 ? "volver a la tapa" : "siguiente";
-    document.title = `${hojas[actual].dataset.nombre} — Yazmin Kussi`;
+    // Más rápido si queda poco recorrido o si la soltaste con impulso
+    const duracion = limitar(160 + (falta / 180) * 420 - Math.abs(velocidad) * 120, 140, 560);
+    const t0 = performance.now();
+    const paso = (ahora: number) => {
+      const t = limitar((ahora - t0) / duracion, 0, 1);
+      const e = 1 - Math.pow(1 - t, 3); // ease-out cúbico
+      g.theta = inicio + (final - inicio) * e;
+      dibujar(g.movil, g.theta);
+      if (t < 1) animacion = requestAnimationFrame(paso);
+      else {
+        limpiarGiro(g, completo);
+        if (giro === g) giro = null;
+      }
+    };
+    animacion = requestAnimationFrame(paso);
   }
 
-  // ---------- Pasar de hoja ----------
-  function ir(n: number, animar = true) {
+  // Si llega otra orden en medio de una animación, la terminamos al instante
+  function cortarGiro() {
+    if (!giro) return;
+    cancelAnimationFrame(animacion);
+    const g = giro;
+    giro = null;
+    const completo = g.adelante ? g.theta > 90 : g.theta < 90;
+    limpiarGiro(g, completo);
+  }
+
+  // ============================================================
+  // 3. Ir a una hoja (pestañas, botones, teclado, URL)
+  // ============================================================
+  function ir(n: number, { animar = true, historial = true } = {}) {
+    cortarGiro();
     if (n < 0 || n >= total || n === actual) return;
-    cerrarPendiente();
-
-    const sale = hojas[actual];
-    const entra = hojas[n];
-    const adelante = n > actual;
-    actual = n;
-    actualizarUI();
-
-    // Si el cuaderno quedó más arriba (scrolleaste), volvemos al principio de la hoja
-    const arriba = raiz.getBoundingClientRect().top;
-    if (arriba < 0) window.scrollBy({ top: arriba, behavior: animar && !reducido ? "smooth" : "auto" });
-
-    if (!animar) {
-      sale.hidden = true;
-      entra.hidden = false;
-    } else if (reducido) {
-      // Movimiento reducido: solo un fundido
-      sale.hidden = true;
-      entra.hidden = false;
-      entra.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, easing: "ease" });
-    } else if (adelante) {
-      // Adelante: la hoja actual se da vuelta hacia la izquierda y deja ver la siguiente
-      entra.hidden = false;
-      sale.classList.add("hoja--volando");
-      const anim = sale.animate(
-        [
-          { transform: "rotateY(0deg)", opacity: 1 },
-          { transform: "rotateY(-70deg)", opacity: 1, offset: 0.65 },
-          { transform: "rotateY(-100deg)", opacity: 0 },
-        ],
-        { duration: 520, easing: "cubic-bezier(0.45, 0, 0.2, 1)" }
-      );
-      const limpiar = () => {
-        sale.hidden = true;
-        sale.classList.remove("hoja--volando");
-      };
-      pendiente = { anim, limpiar };
-      anim.onfinish = () => {
-        if (pendiente?.anim === anim) {
-          pendiente = null;
-          limpiar();
-        }
-      };
-    } else {
-      // Atrás: la hoja anterior vuelve desde la izquierda y tapa la actual
-      entra.hidden = false;
-      entra.classList.add("hoja--volando");
-      const anim = entra.animate(
-        [
-          { transform: "rotateY(-100deg)", opacity: 0 },
-          { transform: "rotateY(-70deg)", opacity: 1, offset: 0.35 },
-          { transform: "rotateY(0deg)", opacity: 1 },
-        ],
-        { duration: 520, easing: "cubic-bezier(0.45, 0, 0.2, 1)" }
-      );
-      const limpiar = () => {
-        sale.hidden = true;
-        entra.classList.remove("hoja--volando");
-      };
-      pendiente = { anim, limpiar };
-      anim.onfinish = () => {
-        if (pendiente?.anim === anim) {
-          pendiente = null;
-          limpiar();
-        }
-      };
+    if (historial) history.pushState(null, "", `#${hojas[n].dataset.hoja}`);
+    if (!animar || reducido) {
+      hojas.forEach((h, i) => (h.hidden = i !== n));
+      cambiarA(n);
+      return;
     }
-
-    // Accesibilidad: el foco pasa a la hoja nueva y se anuncia
-    entra.focus({ preventScroll: true });
-    anuncio.textContent = `Hoja ${actual + 1} de ${total}: ${entra.dataset.nombre}`;
-    window.dispatchEvent(new CustomEvent("cuaderno:hoja", { detail: { id: entra.dataset.hoja } }));
+    giro = empezarGiro(n);
+    soltarGiro(giro, true);
   }
 
-  // Toda navegación pasa por la URL (#id); el evento hashchange hace el cambio.
-  function irA(n: number, sinAnimar = false) {
-    const destino = (n + total) % total; // desde la última, "siguiente" vuelve a la tapa
-    siguienteSinAnimar = sinAnimar;
-    location.hash = hojas[destino].dataset.hoja!;
+  // Después de cambiar: índice, contador, título, foco y aviso para lectores de pantalla
+  function cambiarA(n: number) {
+    actual = n;
+    links.forEach((l, i) => (i === n ? l.setAttribute("aria-current", "page") : l.removeAttribute("aria-current")));
+    const lista = links[n]?.closest("ol");
+    if (lista && lista.scrollWidth > lista.clientWidth) {
+      lista.scrollTo({ left: links[n].offsetLeft - 24, behavior: "smooth" });
+    }
+    contador.textContent = `${dos(n + 1)} / ${dos(total)}`;
+    btnAnterior.setAttribute("aria-disabled", String(n === 0));
+    btnSiguiente.setAttribute("aria-disabled", String(n === total - 1));
+    raiz.toggleAttribute("data-ultima", n === total - 1);
+    document.title = `${hojas[n].dataset.nombre} — Yazmin Kussi`;
+
+    const hoja = hojas[n];
+    hoja.focus({ preventScroll: true });
+    anuncio.textContent = `Hoja ${n + 1} de ${total}: ${hoja.dataset.nombre}`;
+    // Si el cuaderno quedó más arriba (scrolleaste), volvemos al principio de la hoja
+    const arriba = zona.getBoundingClientRect().top;
+    if (arriba < 0) window.scrollBy({ top: arriba - 16, behavior: reducido ? "auto" : "smooth" });
+    window.dispatchEvent(new CustomEvent("cuaderno:hoja", { detail: { id: hoja.dataset.hoja } }));
   }
 
-  window.addEventListener("hashchange", () => {
-    const sinAnimar = siguienteSinAnimar;
-    siguienteSinAnimar = false;
-    ir(indiceDe(location.hash.slice(1)), !sinAnimar);
-  });
+  const indiceDe = (id: string) => Math.max(0, hojas.findIndex((h) => h.dataset.hoja === id));
 
-  btnAnterior.addEventListener("click", () => irA(actual - 1));
-  btnSiguiente.addEventListener("click", () => irA(actual + 1));
+  links.forEach((l, i) =>
+    l.addEventListener("click", (e) => {
+      e.preventDefault();
+      ir(i);
+    })
+  );
+  btnAnterior.addEventListener("click", () => ir(actual - 1));
+  btnSiguiente.addEventListener("click", () => ir(actual + 1));
 
-  // ---------- Teclado ----------
+  // Atrás/adelante del navegador, o un link a "#mesa" desde otra parte del sitio
+  window.addEventListener("hashchange", () => ir(indiceDe(location.hash.slice(1)), { historial: false }));
+
+  // Teclado: instantáneo (lo que se repite con el teclado no se anima)
   document.addEventListener("keydown", (e) => {
     if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
     if (e.altKey || e.ctrlKey || e.metaKey) return;
     const t = e.target as HTMLElement;
-    // No robamos las flechas a campos de texto ni a los stickers de la mesa
     if (t.closest("input, textarea, select, [contenteditable], .sticker, dialog")) return;
-    if (e.key === "ArrowRight" && actual < total - 1) irA(actual + 1, true);
-    if (e.key === "ArrowLeft" && actual > 0) irA(actual - 1, true);
+    ir(actual + (e.key === "ArrowRight" ? 1 : -1), { animar: false });
   });
 
-  // ---------- Deslizar con el dedo ----------
-  let toque: { x: number; y: number; t: number; id: number } | null = null;
+  // ============================================================
+  // 4. AGARRAR LA HOJA
+  // ============================================================
+  const NO_AGARRAR = "a, button, input, textarea, select, label, .mesa, .sticker, [role='switch'], .obra";
 
-  zonaHojas.addEventListener("pointerdown", (e) => {
-    if (e.pointerType === "mouse") return;
-    if ((e.target as HTMLElement).closest(".mesa, a, button, input, textarea")) return;
-    toque = { x: e.clientX, y: e.clientY, t: performance.now(), id: e.pointerId };
+  let toque: {
+    id: number;
+    x0: number;
+    y0: number;
+    radio: number; // distancia del punto agarrado al espiral
+    ancho: number;
+    decidido: boolean;
+    resistencia: boolean; // no hay hoja en esa dirección: solo "tironea"
+    xs: { x: number; t: number }[];
+  } | null = null;
+
+  zona.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0 || toque) return;
+    if ((e.target as HTMLElement).closest(NO_AGARRAR)) return;
+    cortarGiro();
+    const rect = zona.getBoundingClientRect();
+    toque = {
+      id: e.pointerId,
+      x0: e.clientX,
+      y0: e.clientY,
+      // Si agarrás cerca del espiral, igual usamos un brazo mínimo para que no sea hipersensible
+      radio: Math.max(e.clientX - rect.left, rect.width * 0.55),
+      ancho: rect.width,
+      decidido: false,
+      resistencia: false,
+      xs: [{ x: e.clientX, t: performance.now() }],
+    };
   });
 
-  zonaHojas.addEventListener("pointerup", (e) => {
+  zona.addEventListener("pointermove", (e) => {
     if (!toque || e.pointerId !== toque.id) return;
-    const dx = e.clientX - toque.x;
-    const dy = e.clientY - toque.y;
-    const velocidad = Math.abs(dx) / (performance.now() - toque.t);
+    const dx = e.clientX - toque.x0;
+    const dy = e.clientY - toque.y0;
+
+    // Todavía no sabemos si es "pasar la hoja" o scrollear / seleccionar
+    if (!toque.decidido) {
+      if (Math.abs(dx) < 8) return;
+      if (Math.abs(dx) < Math.abs(dy) * 1.2) {
+        toque = null; // era un movimiento vertical: lo dejamos scrollear
+        return;
+      }
+      toque.decidido = true;
+      // Capturamos el puntero: aunque salgas de la hoja, seguís arrastrándola
+      try {
+        zona.setPointerCapture(e.pointerId);
+      } catch {
+        /* algunos navegadores no lo permiten: igual funciona dentro de la hoja */
+      }
+      zona.dataset.arrastrando = "";
+      window.getSelection()?.removeAllRanges();
+      const hasta = actual + (dx < 0 ? 1 : -1);
+      if (hasta < 0 || hasta >= total) {
+        toque.resistencia = true;
+      } else {
+        giro = empezarGiro(hasta);
+      }
+    }
+
+    toque.xs.push({ x: e.clientX, t: performance.now() });
+    if (toque.xs.length > 6) toque.xs.shift();
+
+    if (toque.resistencia) {
+      // Primera o última hoja: se levanta un poquito y nada más (con freno)
+      if (dx < 0) dibujar(hojas[actual], 14 * (1 - Math.exp(dx / 220)));
+      return;
+    }
+    if (!giro) return;
+
+    if (giro.adelante) {
+      // El borde que agarraste sigue a tu mano: su proyección es radio · cos θ
+      const cos = limitar((toque.radio + dx) / toque.radio, -1, 1);
+      giro.theta = aGrados(Math.acos(cos));
+    } else {
+      // Hacia atrás la hoja viene desde la izquierda del espiral
+      const cos = limitar(-1 + (dx * 1.7) / toque.ancho, -1, 1);
+      giro.theta = aGrados(Math.acos(cos));
+    }
+    dibujar(giro.movil, giro.theta);
+  });
+
+  const terminarToque = (e: PointerEvent) => {
+    if (!toque || e.pointerId !== toque.id) return;
+    const t = toque;
     toque = null;
-    // Tiene que ser bien horizontal, y largo o rápido (un "flick" alcanza)
-    if (Math.abs(dx) < Math.abs(dy) * 1.5) return;
-    if (Math.abs(dx) < 70 && velocidad < 0.5) return;
-    if (dx < 0 && actual < total - 1) irA(actual + 1);
-    if (dx > 0 && actual > 0) irA(actual - 1);
-  });
+    delete zona.dataset.arrastrando;
+    if (!t.decidido) return;
 
-  zonaHojas.addEventListener("pointercancel", () => (toque = null));
+    // Velocidad horizontal (px/ms) de los últimos movimientos
+    const a = t.xs[0];
+    const b = t.xs[t.xs.length - 1];
+    const v = (b.x - a.x) / Math.max(1, b.t - a.t);
 
-  // ---------- Arranque: abrimos en la hoja de la URL (o la tapa) ----------
+    if (t.resistencia) {
+      const h = hojas[actual];
+      h.style.transition = "transform 280ms cubic-bezier(0.23, 1, 0.32, 1)";
+      h.style.transform = "";
+      setTimeout(() => (h.style.transition = ""), 300);
+      sombra.style.opacity = "0";
+      return;
+    }
+    if (!giro) return;
+
+    // Se completa si pasó la mitad o si fue un "flick" rápido en esa dirección
+    const g = giro;
+    const completo = g.adelante
+      ? (g.theta > 90 && v < 0.3) || v < -0.45
+      : (g.theta < 90 && v > -0.3) || v > 0.45;
+    if (completo) history.pushState(null, "", `#${hojas[g.hasta].dataset.hoja}`);
+    soltarGiro(g, completo, v);
+  };
+
+  zona.addEventListener("pointerup", terminarToque);
+  zona.addEventListener("pointercancel", terminarToque);
+
+  // ============================================================
+  // 5. Arranque: abrimos en la hoja de la URL (o la tapa)
+  // ============================================================
+  hojas.forEach((h) => (h.tabIndex = -1));
   actual = indiceDe(location.hash.slice(1));
-  hojas.forEach((h, i) => {
-    h.hidden = i !== actual;
-    h.tabIndex = -1;
-  });
-  actualizarUI();
+  hojas.forEach((h, i) => (h.hidden = i !== actual));
+  links.forEach((l, i) => (i === actual ? l.setAttribute("aria-current", "page") : l.removeAttribute("aria-current")));
+  contador.textContent = `${dos(actual + 1)} / ${dos(total)}`;
+  btnAnterior.setAttribute("aria-disabled", String(actual === 0));
+  btnSiguiente.setAttribute("aria-disabled", String(actual === total - 1));
+  raiz.toggleAttribute("data-ultima", actual === total - 1);
+
+  // Una sola vez: la esquina se levanta un poquito para mostrar que se puede agarrar
+  if (!reducido) {
+    setTimeout(() => {
+      esquina.animate(
+        [
+          { width: "34px", height: "34px" },
+          { width: "64px", height: "64px", offset: 0.4 },
+          { width: "34px", height: "34px" },
+        ],
+        { duration: 1100, easing: "cubic-bezier(0.45, 0, 0.2, 1)" }
+      );
+    }, 1400);
+  }
 </script>

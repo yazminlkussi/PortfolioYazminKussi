@@ -28,7 +28,8 @@ Las hojas del cuaderno:
 | 08 | **contacto** | Un diálogo "Nuevo proyecto" para escribirme |
 
 Las interacciones que cambian la experiencia:
-- **Pasar las hojas** (pestañas, botones, flechas del teclado o deslizar con el dedo).
+- **Agarrar la hoja y pasarla**: con el mouse o el dedo, la hoja gira en 3D sobre el espiral siguiendo
+  tu mano. Si la soltás pasada la mitad (o con un movimiento rápido) se da vuelta; si no, vuelve.
 - **El interruptor de tono** en "sobre mí", que cambia el texto que leés.
 - **La mesa de collage**: pegás obras del moodboard y las mezclás con mis stickers. Cada visita termina
   con un collage distinto.
@@ -56,9 +57,15 @@ npm run preview  # sirve dist/ para probar el build
 - **CSS propio con variables** (`src/styles/global.css`): paleta, tipografías, sombras y curvas de
   animación en un solo lugar.
 - **Tipografías (Google Fonts):** Inter Tight (títulos y texto) y Gochi Hand (notas a mano).
-- **Animación de pasar la hoja con la Web Animations API** (`element.animate`): la hoja gira sobre el
-  borde del espiral (`rotateY` con perspectiva). Se puede interrumpir: si pasás rápido, la anterior se
-  completa al instante.
+- **Pasar la hoja arrastrando, con física simple y sin librerías:** el ángulo sale de la posición de tu
+  mano (el borde que agarraste se proyecta como `radio · cos θ`, así que la hoja "sigue al dedo"). Al
+  soltar decide por posición o por velocidad (un *flick* alcanza) y termina con un `requestAnimationFrame`
+  con *ease-out* cuya duración depende de cuánto falta y de la velocidad. Se ve el **dorso** de la hoja
+  después de los 90° (un segundo plano espejado con `backface-visibility`), la hoja se oscurece al
+  levantarse y proyecta **sombra** sobre la de abajo.
+- **Cuaderno realista con CSS puro:** espiral metálico (un SVG que se repite, con agujeros en la hoja),
+  tapa de cartón rosa con textura, canto de hojas apiladas, papel punteado y esquina doblada que invita a
+  agarrar la hoja.
 - **Movimiento con criterio:** solo animo `transform` y `opacity`, uso curvas `ease-out` fuertes, nada
   arranca desde `scale(0)`, lo que se hace con teclado es instantáneo (incluido pasar la hoja con las
   flechas) y el hover solo existe con mouse.
@@ -89,9 +96,11 @@ src/
 ## Componentes propios
 
 1. **`Cuaderno`**: la navegación y la estructura. Recibe la lista de hojas y muestra una sola a la vez.
-   Se navega con pestañas, botones anterior/siguiente, flechas del teclado y deslizando con el dedo
-   (detecta un "flick" por velocidad, no solo por distancia). Todo pasa por la URL (`hashchange`). Cuando
-   cambia la hoja, mueve el foco a la hoja nueva y lo anuncia a lectores de pantalla.
+   La forma principal es **agarrar la hoja** (mouse o dedo): distingue un arrastre horizontal de un scroll
+   vertical, no se activa sobre links, botones, campos ni la mesa, y en la primera y la última hoja la
+   hoja solo "tironea" con freno. Como alternativa accesible (WCAG 2.2, *dragging movements*) hay
+   pestañas, flechas del teclado y dos botones chicos. La URL guarda la hoja (`pushState` + `hashchange`).
+   Cuando cambia la hoja, mueve el foco a la hoja nueva y lo anuncia a lectores de pantalla.
 2. **`HojaProyecto`**: recibe un proyecto de `src/data/proyectos.ts` y arma su hoja. Para sumar un
    proyecto alcanza con agregar un objeto a la lista: se crean solas la hoja, la pestaña y la carpeta de la
    tapa. Si el proyecto tiene `imagenes`, las muestra en las ventanas. Si no, usa composiciones CSS.
@@ -135,7 +144,9 @@ guardado y aparece cuando llegás.
 - **Mobile first.** En celular el índice es una tira de pestañas que se desliza y cada hoja va en una
   columna, abriendo con el collage visual. Desde 900–980 px las hojas pasan a dos columnas y, desde
   1100 px, el índice se vuelve pestañas que salen del costado del cuaderno.
-- En celular se pasa la hoja deslizando con el dedo (`touch-action: pan-y` para no pelear con el scroll).
+- En celular se agarra la hoja con el dedo (`touch-action: pan-y`: lo vertical sigue scrolleando y lo
+  horizontal pasa la hoja).
+- Arrastrar nunca es la única forma: pestañas, teclado y botones hacen lo mismo con un clic.
 - Tipografía fluida con `clamp()`. Probé en 375 px, ~800 px y escritorio, sin scroll horizontal.
 - **Táctil:** áreas de toque de 44 px como mínimo, `touch-action: none` en los stickers para que
   arrastrar no scrollee la página e inputs de 16 px para que el celular no haga zoom.
@@ -157,7 +168,7 @@ guardado y aparece cuando llegás.
   (campo `imagenes` en `src/data/proyectos.ts`) y poner mi foto en "sobre mí".
 - El moodboard busca mejor en inglés (es la lengua de la API). Podría traducir los temas automáticamente.
 - El collage se guarda solo en tu navegador. Una mejora sería poder exportarlo como imagen.
-- En celular, pasar la hoja podría seguir al dedo mientras deslizás (hoy se dispara al soltar).
+- La hoja gira como un plano rígido: una curvatura real del papel (*page curl*) necesitaría canvas/WebGL.
 
 ## Créditos y licencias
 

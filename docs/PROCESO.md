@@ -67,6 +67,20 @@ de animación.
 
 ✍️ _Capturas antes / después:_
 
+### Tercera iteración: agarrar la hoja
+
+Pasar la hoja con un botón se sentía como una página web, no como un cuaderno. Quise que **se pudiera
+agarrar la hoja** y que el cuaderno fuera **más realista**.
+- Reemplacé la animación fija por un arrastre: la hoja gira en 3D siguiendo la mano y, al soltarla,
+  decide si se da vuelta según la posición y la velocidad.
+- Sumé el dorso de la hoja, la sombra que proyecta, la luz que cambia al levantarse, un espiral metálico
+  con agujeros, la tapa de cartón rosa, el canto de las hojas apiladas, el papel punteado y una esquina
+  doblada que se levanta sola una vez para mostrar que se puede agarrar.
+- Mantuve pestañas, teclado y dos botones chicos como alternativa: la guía de accesibilidad (WCAG 2.2)
+  pide que arrastrar nunca sea la única forma.
+
+✍️ _Qué se siente distinto al usarlo:_
+
 ## 4. Cómo evolucionó la estructura
 
 1. Primero pensé en secciones clásicas: inicio, sobre mí, proyectos y contacto.
@@ -120,6 +134,11 @@ Seguí la filosofía de diseño de interfaces de Emil Kowalski:
   si llega otra, la cancelo y dejo todo prolijo antes de empezar la nueva.
 - **(v2) En pantallas medianas la hoja de proyecto empezaba con un bloque de texto.** Reordené para que,
   en una columna, abra con el collage visual.
+
+- **(v3) Arrastrar vs. scrollear en el celular.** Si el movimiento empieza vertical, lo dejo scrollear; solo
+  si es claramente horizontal (más de 8 px y más horizontal que vertical) "agarro" la hoja.
+- **(v3) Arrastrar sobre la mesa o los botones pasaba la hoja.** Excluyo esos elementos del agarre.
+- **(v3) La hoja dada vuelta generaba scroll horizontal** al salir por la izquierda: `overflow-x: clip`.
 
 ✍️ _Otros problemas que encuentre:_
 
