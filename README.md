@@ -2,7 +2,7 @@
 
 Examen final de **Programación Multimedial IV**.
 
-> **URL publicada:** _(completar después del deploy)_
+> **URL publicada:** https://portfolio-yazmin-kussi.vercel.app
 > **Repositorio:** https://github.com/yazminlkussi/PortfolioYazminKussi
 
 ## La propuesta
