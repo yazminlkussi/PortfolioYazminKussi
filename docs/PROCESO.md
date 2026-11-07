@@ -145,7 +145,7 @@ Seguí la filosofía de diseño de interfaces de Emil Kowalski:
 ## 8. Pendiente / mejorable
 
 - Reemplazar las tapas CSS de los proyectos por capturas reales.
-- ~~Completar mis links de contacto~~ → puse mi mail real (yazkussi@gmail.com); decidí no sumar redes por ahora.
+- ~~Completar mis links de contacto~~ → decidí no mostrar redes ni el mail suelto: el diálogo "Nuevo proyecto" ahora manda el mensaje directo a mi casilla (vía FormSubmit) en vez de abrir el programa de correo de quien visita.
 - Sumar más proyectos (hay un lugar reservado: "este espacio está esperando el próximo recorte").
 - Exportar el collage como imagen.
 

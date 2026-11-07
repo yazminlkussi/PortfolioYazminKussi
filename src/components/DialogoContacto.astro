@@ -1,7 +1,10 @@
 ---
 // Contacto como un cuadro de diálogo de iOS ("Nuevo álbum" → "Nuevo proyecto").
-// Escribís tu idea y "Enviar" abre tu programa de mail con el texto ya cargado.
-// No hay servidor: usamos un link mailto:, así que no se guarda nada en ningún lado.
+// Escribís tu idea y tu mail, y "Enviar" lo manda directo a mi casilla, sin abrir
+// tu programa de correo. Como el sitio es estático (no tiene servidor propio), el envío
+// pasa por FormSubmit (https://formsubmit.co), que recibe el formulario y me lo reenvía.
+//
+// Estados: validación · enviando · enviado · error (sin conexión / demora > 10 s / servicio caído)
 
 interface Props {
   email: string;
@@ -10,18 +13,38 @@ interface Props {
 const { email } = Astro.props;
 ---
 
-<form class="dialogo" data-contacto data-email={email}>
-  <div class="dialogo__cuerpo">
+<form class="dialogo" data-contacto data-email={email} novalidate>
+  <div class="dialogo__cuerpo" data-formulario>
     <p class="dialogo__titulo" id="dialogo-titulo">Nuevo proyecto</p>
-    <p class="dialogo__texto">Contame tu idea y la seguimos por mail.</p>
+    <p class="dialogo__texto">Contame tu idea y te respondo por mail.</p>
+
     <label class="sr-only" for="idea">Tu idea</label>
-    <input id="idea" name="idea" type="text" placeholder="una web para mi banda ✿" autocomplete="off" maxlength="300" />
+    <textarea id="idea" name="idea" rows="2" placeholder="una web para mi banda ✿" maxlength="600"></textarea>
+
+    <label class="sr-only" for="correo">Tu mail, para responderte</label>
+    <input id="correo" name="correo" type="email" placeholder="tu mail" autocomplete="email" maxlength="120" />
+
+    <!-- trampa para bots: una persona nunca ve ni completa este campo -->
+    <input class="dialogo__trampa" type="text" name="_honey" tabindex="-1" autocomplete="off" aria-hidden="true" />
+
     <p class="dialogo__error" data-error aria-live="polite"></p>
   </div>
-  <div class="dialogo__botones">
-    <button type="reset">Borrar</button>
-    <button type="submit"><strong>Enviar</strong></button>
+
+  <div class="dialogo__cuerpo dialogo__listo" data-listo hidden>
+    <span class="dialogo__check" aria-hidden="true">✓</span>
+    <p class="dialogo__titulo">¡Recibido!</p>
+    <p class="dialogo__texto">Te escribo pronto ✿</p>
   </div>
+
+  <div class="dialogo__botones" data-botones>
+    <button type="reset">Borrar</button>
+    <button type="submit" data-enviar><strong>Enviar</strong></button>
+  </div>
+  <div class="dialogo__botones dialogo__botones--uno" data-otra hidden>
+    <button type="button" data-de-nuevo><strong>Escribir otra</strong></button>
+  </div>
+
+  <p class="sr-only" aria-live="polite" data-anuncio></p>
 </form>
 
 <style>
@@ -36,7 +59,12 @@ const { email } = Astro.props;
   }
 
   .dialogo__cuerpo {
-    padding: 20px 18px 16px;
+    padding: 20px 18px 14px;
+  }
+
+  .dialogo__cuerpo[hidden],
+  .dialogo__botones[hidden] {
+    display: none;
   }
 
   .dialogo__titulo {
@@ -51,20 +79,45 @@ const { email } = Astro.props;
     color: var(--tinta-suave);
   }
 
+  .dialogo textarea,
   .dialogo input {
+    display: block;
     width: 100%;
     min-height: 40px;
-    font: 400 1rem var(--f-texto);
+    font: 400 1rem/1.35 var(--f-texto);
     color: var(--tinta);
     background: #fff;
     border: 1px solid var(--chrome-borde);
     border-radius: 8px;
-    padding: 0 12px;
+    padding: 9px 12px;
   }
 
+  .dialogo textarea {
+    resize: none;
+    border-radius: 8px 8px 0 0;
+  }
+
+  .dialogo input {
+    border-top: 0;
+    border-radius: 0 0 8px 8px;
+  }
+
+  .dialogo textarea:focus-visible,
   .dialogo input:focus-visible {
     outline: 2px solid var(--azul);
-    outline-offset: 0;
+    outline-offset: -1px;
+  }
+
+  .dialogo [aria-invalid="true"] {
+    background: #fff5f4;
+  }
+
+  .dialogo__trampa {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
   }
 
   .dialogo__error {
@@ -74,10 +127,39 @@ const { email } = Astro.props;
     color: #c4271b;
   }
 
+  /* Enviado: un tilde que aparece con un pequeño rebote */
+  .dialogo__listo {
+    padding-top: 24px;
+  }
+
+  .dialogo__check {
+    display: inline-grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    margin-bottom: 8px;
+    border-radius: 50%;
+    background: var(--verde);
+    color: #fff;
+    font-size: 1.375rem;
+    animation: aparecer-check 380ms var(--ease-out) both;
+  }
+
+  @keyframes aparecer-check {
+    from {
+      opacity: 0;
+      transform: scale(0.6);
+    }
+  }
+
   .dialogo__botones {
     display: grid;
     grid-template-columns: 1fr 1fr;
     border-top: 1px solid var(--chrome-borde);
+  }
+
+  .dialogo__botones--uno {
+    grid-template-columns: 1fr;
   }
 
   .dialogo__botones button {
@@ -87,7 +169,7 @@ const { email } = Astro.props;
     font: 400 1.0625rem var(--f-texto);
     color: var(--azul-texto);
     cursor: pointer;
-    transition: background-color 160ms ease;
+    transition: background-color 160ms ease, opacity 160ms ease;
   }
 
   .dialogo__botones button + button {
@@ -101,26 +183,134 @@ const { email } = Astro.props;
   .dialogo__botones button:active {
     background: rgb(0 0 0 / 0.06);
   }
+
+  .dialogo__botones button:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dialogo__check {
+      animation: none;
+    }
+  }
 </style>
 
 <script>
-  const form = document.querySelector<HTMLFormElement>("[data-contacto]")!;
-  const input = form.querySelector<HTMLInputElement>("input")!;
-  const error = form.querySelector<HTMLElement>("[data-error]")!;
+  const LIMITE_MS = 10000;
+  const MAIL_OK = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-  form.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const idea = input.value.trim();
-    if (!idea) {
-      error.textContent = "Escribí aunque sea una palabra.";
-      input.focus();
-      return;
+  const form = document.querySelector<HTMLFormElement>("[data-contacto]")!;
+  const idea = form.querySelector<HTMLTextAreaElement>("#idea")!;
+  const correo = form.querySelector<HTMLInputElement>("#correo")!;
+  const trampa = form.querySelector<HTMLInputElement>("[name='_honey']")!;
+  const error = form.querySelector<HTMLElement>("[data-error]")!;
+  const anuncio = form.querySelector<HTMLElement>("[data-anuncio]")!;
+  const enviar = form.querySelector<HTMLButtonElement>("[data-enviar]")!;
+  const formulario = form.querySelector<HTMLElement>("[data-formulario]")!;
+  const listo = form.querySelector<HTMLElement>("[data-listo]")!;
+  const botones = form.querySelector<HTMLElement>("[data-botones]")!;
+  const otra = form.querySelector<HTMLElement>("[data-otra]")!;
+
+  // El endpoint AJAX de FormSubmit responde JSON en vez de redirigir a otra página
+  const destino = `https://formsubmit.co/ajax/${form.dataset.email}`;
+
+  function marcarError(campo: HTMLElement | null, texto: string) {
+    idea.removeAttribute("aria-invalid");
+    correo.removeAttribute("aria-invalid");
+    if (campo) {
+      campo.setAttribute("aria-invalid", "true");
+      campo.focus();
     }
-    const asunto = encodeURIComponent("Nuevo proyecto ✿");
-    const cuerpo = encodeURIComponent(`Hola Yazmin! Tengo una idea: ${idea}`);
-    window.location.href = `mailto:${form.dataset.email}?subject=${asunto}&body=${cuerpo}`;
+    error.textContent = texto;
+  }
+
+  function enviando(si: boolean) {
+    enviar.disabled = si;
+    form.setAttribute("aria-busy", String(si));
+    enviar.innerHTML = si ? "<strong>Enviando…</strong>" : "<strong>Enviar</strong>";
+  }
+
+  function mostrarListo(si: boolean) {
+    formulario.hidden = si;
+    botones.hidden = si;
+    listo.hidden = !si;
+    otra.hidden = !si;
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (enviar.disabled) return; // evita el doble envío
+
+    const textoIdea = idea.value.trim();
+    const textoCorreo = correo.value.trim();
+    if (!textoIdea) return marcarError(idea, "Escribí aunque sea una palabra.");
+    if (!MAIL_OK.test(textoCorreo)) return marcarError(correo, "Dejame un mail válido para poder responderte.");
+    marcarError(null, "");
+
+    // Si un bot completó la trampa, hacemos como que salió bien y no mandamos nada
+    if (trampa.value) return mostrarListo(true);
+
+    const ctrl = new AbortController();
+    const reloj = setTimeout(() => ctrl.abort("timeout"), LIMITE_MS);
+    enviando(true);
+    anuncio.textContent = "Enviando tu mensaje…";
+
+    try {
+      const res = await fetch(destino, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          idea: textoIdea,
+          email: textoCorreo, // FormSubmit lo usa como "responder a"
+          _subject: "Nuevo proyecto desde el portfolio ✿",
+          _template: "table",
+          _honey: "",
+        }),
+        signal: ctrl.signal,
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || String(json.success) !== "true") {
+        throw new Error(json.message || `HTTP ${res.status}`);
+      }
+      form.reset();
+      mostrarListo(true);
+      anuncio.textContent = "Mensaje enviado. ¡Gracias!";
+    } catch (err) {
+      const porTiempo = ctrl.signal.reason === "timeout";
+      marcarError(
+        null,
+        porTiempo
+          ? "El envío está tardando demasiado. Probá de nuevo en un ratito."
+          : navigator.onLine === false
+            ? "Parece que no tenés conexión. Tu texto sigue acá."
+            : "No se pudo enviar. Probá de nuevo; tu texto sigue acá."
+      );
+      console.warn("[contacto]", err);
+    } finally {
+      clearTimeout(reloj);
+      enviando(false);
+    }
   });
 
-  input.addEventListener("input", () => (error.textContent = ""));
-  form.addEventListener("reset", () => (error.textContent = ""));
+  form.querySelector("[data-de-nuevo]")!.addEventListener("click", () => {
+    mostrarListo(false);
+    idea.focus();
+  });
+
+  [idea, correo].forEach((c) =>
+    c.addEventListener("input", () => {
+      c.removeAttribute("aria-invalid");
+      error.textContent = "";
+    })
+  );
+  form.addEventListener("reset", () => marcarError(null, ""));
+
+  // Enter en el texto envía; Shift+Enter hace un salto de línea
+  idea.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      form.requestSubmit();
+    }
+  });
 </script>

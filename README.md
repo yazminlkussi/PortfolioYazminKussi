@@ -25,7 +25,7 @@ Las hojas del cuaderno:
 | 03–05 | **nodo, karaoke, dunkin** | Una hoja por proyecto: texto, rol, herramientas y collage visual |
 | 06 | **inspo** | Moodboard vivo tipo Pinterest con piezas de un museo real (API) |
 | 07 | **mesa** | Mesa de collage: quien visita arma su propia página |
-| 08 | **contacto** | Un diálogo "Nuevo proyecto" para escribirme |
+| 08 | **contacto** | Un diálogo "Nuevo proyecto" que me llega directo al mail |
 
 Las interacciones que cambian la experiencia:
 - **Agarrar la hoja y pasarla**: con el mouse o el dedo, la hoja gira en 3D sobre el espiral siguiendo
@@ -86,7 +86,7 @@ src/
 │   ├── InterruptorTono.astro  switch profesional / personal en "sobre mí"
 │   ├── Moodboard.astro        API del museo con estados
 │   ├── MesaDeCollage.astro    stickers arrastrables con física
-│   ├── DialogoContacto.astro  diálogo "Nuevo proyecto" → mail
+│   ├── DialogoContacto.astro  diálogo "Nuevo proyecto" → FormSubmit → mi mail
 │   ├── Lapiz.astro            dibujar sobre las hojas (canvas)
 │   ├── Tocadiscos.astro       reproductor con la API de iTunes
 │   ├── VentanaMac.astro       (visual) ventana que hace de marco
@@ -119,7 +119,10 @@ src/
    recién se arma la primera vez que tiene tamaño (`ResizeObserver`).
 5. **`InterruptorTono`**: un `<button role="switch">` que cambia entre la versión profesional y la personal de
    mi presentación.
-6. **`DialogoContacto`**: valida que escribas algo y abre tu mail con el texto cargado (`mailto:`).
+6. **`DialogoContacto`**: pide tu idea y tu mail, los valida y me los manda **directo a mi casilla**
+   con un `fetch` a FormSubmit (sin abrir tu programa de correo). Tiene estados de enviando (botón
+   deshabilitado, sin doble envío), enviado (un tilde verde y "Escribir otra") y error, y una trampa
+   invisible para bots.
 7. **`Lapiz`**: monta un `<canvas>` dentro de cada hoja (por eso el dibujo gira con la hoja al pasarla).
    Tres tintas, deshacer (también con Ctrl+Z), borrar la hoja (y deshacer el borrado) y Escape para salir.
    Los trazos se suavizan con curvas por los puntos medios, usan los eventos *coalesced* del puntero para
@@ -169,6 +172,23 @@ guardado y aparece cuando llegás.
   - **Audio que no carga:** salta al siguiente tema (con un tope para no quedar en un bucle).
   - El navegador nunca reproduce solo: la música arranca siempre con un clic tuyo.
 
+## API 3: FormSubmit (contacto)
+
+- **Fuente:** https://formsubmit.co. Recibe formularios y los reenvía por mail; no necesita cuenta ni
+  clave, por eso sirve para un sitio estático sin servidor propio.
+- **Pedido:** `POST https://formsubmit.co/ajax/<mi mail>` con JSON (`idea`, `email`, `_subject`,
+  `_template`, `_honey`). El campo `email` queda como "responder a", así contesto directo.
+- **Límites y errores:**
+  - **Activación:** el primer envío no llega. FormSubmit me manda un mail de confirmación y recién
+    después de aceptarlo empiezan a llegar los mensajes.
+  - **Validación antes de mandar:** texto no vacío y mail con formato válido (con `aria-invalid` y el
+    error anunciado con `aria-live`).
+  - **Error o timeout (10 s):** el mensaje no se borra, así se puede reintentar sin volver a escribir.
+    Si no hay conexión, lo dice.
+  - **Spam:** campo trampa `_honey` (las personas no lo ven; si un bot lo completa, no se envía nada).
+  - Mi mail aparece en el código de la página. FormSubmit permite cambiarlo por un alias después de
+    activar el formulario.
+
 ## Responsive y accesibilidad
 
 - **Mobile first.** En celular el índice es una tira de pestañas que se desliza y cada hoja va en una
@@ -206,6 +226,7 @@ guardado y aparece cuando llegás.
 
 - Imágenes del moodboard: © Victoria and Albert Museum, Londres, vía su API pública. Uso no comercial,
   según sus [términos](https://www.vam.ac.uk/info/va-websites-terms-conditions).
+- Envío del formulario de contacto: FormSubmit (https://formsubmit.co).
 - Música del tocadiscos: previews y tapas provistos por la API de búsqueda de iTunes (Apple).
 - Tipografías: Inter Tight y Gochi Hand, de Google Fonts (SIL Open Font License).
 - La estética de stickers de interfaz está inspirada en macOS/iOS. Los íconos (ventanas, carpetas, cursor,
