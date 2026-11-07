@@ -145,7 +145,7 @@ Seguí la filosofía de diseño de interfaces de Emil Kowalski:
 ## 8. Pendiente / mejorable
 
 - Reemplazar las tapas CSS de los proyectos por capturas reales.
-- Completar mis links de contacto (mail, Instagram, LinkedIn, GitHub).
+- ~~Completar mis links de contacto~~ → puse mi mail real (yazkussi@gmail.com); decidí no sumar redes por ahora.
 - Sumar más proyectos (hay un lugar reservado: "este espacio está esperando el próximo recorte").
 - Exportar el collage como imagen.
 
