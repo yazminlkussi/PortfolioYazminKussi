@@ -23,7 +23,7 @@ Las hojas del cuaderno:
 | 01 | **tapa** | Quién soy, con carpetas que llevan a cada proyecto |
 | 02 | **sobre mí** | Mi presentación, con un interruptor que cambia el tono (profesional ↔ personal) |
 | 03–05 | **nodo, karaoke, dunkin** | Una hoja por proyecto: texto, rol, herramientas y collage visual |
-| 06 | **inspo** | Moodboard vivo con piezas de un museo real (API) |
+| 06 | **inspo** | Moodboard vivo tipo Pinterest con piezas de un museo real (API) |
 | 07 | **mesa** | Mesa de collage: quien visita arma su propia página |
 | 08 | **contacto** | Un diálogo "Nuevo proyecto" para escribirme |
 
@@ -33,6 +33,10 @@ Las interacciones que cambian la experiencia:
 - **El interruptor de tono** en "sobre mí", que cambia el texto que leés.
 - **La mesa de collage**: pegás obras del moodboard y las mezclás con mis stickers. Cada visita termina
   con un collage distinto.
+- **El lápiz**: un botón flotante para dibujar a mano sobre cualquier hoja (lápiz, birome azul o
+  resaltador rosa). El dibujo queda en la hoja: si la pasás, se va con ella.
+- **El tocadiscos**: música para recorrer el cuaderno (porque la música también inspira). Elegís un
+  ambiente o buscás un tema y suena un preview de 30 segundos mientras el vinilo gira.
 
 **Público:** docentes y compañeros de la carrera, estudios de diseño y marcas que buscan un perfil
 multimedial (diseño + desarrollo) para pasantías o primeros trabajos.
@@ -83,6 +87,8 @@ src/
 │   ├── Moodboard.astro        API del museo con estados
 │   ├── MesaDeCollage.astro    stickers arrastrables con física
 │   ├── DialogoContacto.astro  diálogo "Nuevo proyecto" → mail
+│   ├── Lapiz.astro            dibujar sobre las hojas (canvas)
+│   ├── Tocadiscos.astro       reproductor con la API de iTunes
 │   ├── VentanaMac.astro       (visual) ventana que hace de marco
 │   ├── Seleccion.astro        (visual) cuadro de selección con manijas
 │   ├── NotaMano.astro         (visual) nota escrita a mano con flecha
@@ -114,6 +120,15 @@ src/
 5. **`InterruptorTono`**: un `<button role="switch">` que cambia entre la versión profesional y la personal de
    mi presentación.
 6. **`DialogoContacto`**: valida que escribas algo y abre tu mail con el texto cargado (`mailto:`).
+7. **`Lapiz`**: monta un `<canvas>` dentro de cada hoja (por eso el dibujo gira con la hoja al pasarla).
+   Tres tintas, deshacer (también con Ctrl+Z), borrar la hoja (y deshacer el borrado) y Escape para salir.
+   Los trazos se suavizan con curvas por los puntos medios, usan los eventos *coalesced* del puntero para
+   ser más fluidos y se guardan en `localStorage` relativos al ancho de la hoja, así se redibujan bien si
+   cambia el tamaño de la ventana. Mientras dibujás, el cuaderno no agarra la hoja.
+8. **`Tocadiscos`**: un reproductor flotante que vive fuera de las hojas, así la música sigue mientras
+   navegás. Consume la API de iTunes (ver abajo), con ambientes, buscador, anterior/siguiente, barra de
+   progreso y un vinilo con la tapa del disco que gira solo mientras suena. Al terminar un preview pasa al
+   siguiente. Se cierra con Escape o tocando afuera, y el foco vuelve al botón.
 
 **Cómo se comunican Moodboard y Mesa:** no se importan entre sí. El moodboard emite
 `window.dispatchEvent(new CustomEvent("mesa:pegar", { detail }))` y la mesa lo escucha. Así cada
@@ -123,7 +138,7 @@ guardado y aparece cuando llegás.
 ## API: Victoria and Albert Museum
 
 - **Fuente:** API pública de colecciones del V&A, Londres → https://developers.vam.ac.uk/ (no necesita clave).
-- **Pedido:** `GET https://api.vam.ac.uk/v2/objects/search?q=<tema>&images_exist=1&page_size=18`
+- **Pedido:** `GET https://api.vam.ac.uk/v2/objects/search?q=<tema>&images_exist=1&page_size=30`
 - **Qué uso:** título, autor, fecha y la URL base IIIF de la imagen. Pido cada imagen al ancho justo que
   necesito (`.../full/400,/0/default.jpg`).
 - **Límites y errores:**
@@ -138,6 +153,21 @@ guardado y aparece cuando llegás.
   - Los cambios de estado se anuncian con `aria-live`.
 - Primero usé la API del Art Institute of Chicago, pero bloquea los pedidos desde el navegador (403 de
   Cloudflare). Lo cuento en la [bitácora](docs/PROCESO.md).
+
+## API 2: búsqueda de iTunes (tocadiscos)
+
+- **Fuente:** iTunes Search API → https://performance-partners.apple.com/search-api (no necesita clave,
+  responde con CORS abierto).
+- **Pedido:** `GET https://itunes.apple.com/search?term=<búsqueda>&media=music&entity=song&limit=25&country=AR`
+- **Qué uso:** nombre del tema, artista, `previewUrl` (audio de 30 s) y la tapa (`artworkUrl100`).
+- **Límites y errores:**
+  - Apple indica un límite aproximado de **20 pedidos por minuto**: por eso cacheo cada búsqueda en
+    `sessionStorage` y recién pido cuando abrís el tocadiscos.
+  - Solo hay **previews de 30 segundos**, no canciones completas.
+  - **Cargando:** filas esqueleto. **Error / timeout (8 s):** mensaje y botón *reintentar*.
+    **Vacío:** "No encontré canciones…". Pedidos encimados se cancelan con `AbortController`.
+  - **Audio que no carga:** salta al siguiente tema (con un tope para no quedar en un bucle).
+  - El navegador nunca reproduce solo: la música arranca siempre con un clic tuyo.
 
 ## Responsive y accesibilidad
 
@@ -167,13 +197,16 @@ guardado y aparece cuando llegás.
 - Las ventanas de los proyectos muestran composiciones CSS. Falta reemplazarlas por capturas reales
   (campo `imagenes` en `src/data/proyectos.ts`) y poner mi foto en "sobre mí".
 - El moodboard busca mejor en inglés (es la lengua de la API). Podría traducir los temas automáticamente.
-- El collage se guarda solo en tu navegador. Una mejora sería poder exportarlo como imagen.
+- El collage y los dibujos se guardan solo en tu navegador. Una mejora sería poder exportarlos como imagen.
+- Los ambientes del tocadiscos son búsquedas genéricas: la idea es reemplazarlos por la música que yo
+  escucho.
 - La hoja gira como un plano rígido: una curvatura real del papel (*page curl*) necesitaría canvas/WebGL.
 
 ## Créditos y licencias
 
 - Imágenes del moodboard: © Victoria and Albert Museum, Londres, vía su API pública. Uso no comercial,
   según sus [términos](https://www.vam.ac.uk/info/va-websites-terms-conditions).
+- Música del tocadiscos: previews y tapas provistos por la API de búsqueda de iTunes (Apple).
 - Tipografías: Inter Tight y Gochi Hand, de Google Fonts (SIL Open Font License).
 - La estética de stickers de interfaz está inspirada en macOS/iOS. Los íconos (ventanas, carpetas, cursor,
   diálogo) están dibujados a mano en CSS/SVG, no son recursos de Apple.

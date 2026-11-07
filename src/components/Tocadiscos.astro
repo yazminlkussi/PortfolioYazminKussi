@@ -1,0 +1,816 @@
+---
+// Tocadiscos: música para recorrer el cuaderno (porque la música también inspira).
+// Usa la API pública de búsqueda de iTunes (https://performance-partners.apple.com/search-api):
+// no necesita clave y cada canción trae un preview de 30 segundos y la tapa del disco.
+//
+// Estados: cargando · lista · vacío · error (sin conexión / demora > 8 s, con "reintentar")
+// y error de reproducción (si un preview no carga, pasa al siguiente).
+// El panel se cierra pero la música sigue: el reproductor vive fuera de las hojas.
+
+interface Ambiente {
+  etiqueta: string;
+  busqueda: string;
+}
+
+interface Props {
+  ambientes: Ambiente[];
+}
+
+const { ambientes } = Astro.props;
+---
+
+<div class="toca" data-toca>
+  <section class="toca__panel" id="toca-panel" aria-labelledby="toca-titulo" data-panel hidden>
+    <header class="toca__cabecera">
+      <h2 class="toca__titulo" id="toca-titulo">tocadiscos</h2>
+      <button class="toca__cerrar" type="button" data-cerrar aria-label="Cerrar el tocadiscos">
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"
+          ><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"></path></svg
+        >
+      </button>
+    </header>
+
+    <!-- Lo que está sonando -->
+    <div class="toca__ahora">
+      <div class="vinilo" data-vinilo aria-hidden="true">
+        <img class="vinilo__tapa" data-tapa alt="" width="100" height="100" hidden />
+      </div>
+      <div class="toca__info">
+        <p class="toca__cancion" data-cancion>elegí algo para escuchar</p>
+        <p class="toca__artista" data-artista>previews de 30 segundos</p>
+        <div class="toca__barra" aria-hidden="true"><span data-progreso></span></div>
+        <div class="toca__botones">
+          <button class="toca__ctrl" type="button" data-anterior aria-label="Canción anterior" disabled>
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"
+              ><path d="M7 5v14M19 5 9 12l10 7z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"
+              ></path></svg
+            >
+          </button>
+          <button class="toca__ctrl toca__ctrl--play" type="button" data-play aria-label="Reproducir" disabled>
+            <svg class="i-play" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"
+              ><path d="M8 5v14l11-7z" fill="currentColor"></path></svg
+            >
+            <svg class="i-pausa" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"
+              ><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"></path></svg
+            >
+          </button>
+          <button class="toca__ctrl" type="button" data-siguiente aria-label="Canción siguiente" disabled>
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"
+              ><path d="M17 5v14M5 5l10 7-10 7z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"
+              ></path></svg
+            >
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="toca__ambientes" role="group" aria-label="Ambientes">
+      {
+        ambientes.map((a, i) => (
+          <button class="toca__chip" type="button" data-busqueda={a.busqueda} aria-pressed={i === 0 ? "true" : "false"}>
+            {a.etiqueta}
+          </button>
+        ))
+      }
+    </div>
+
+    <form class="toca__buscar" data-buscar role="search">
+      <label class="sr-only" for="toca-q">Buscar canción o artista</label>
+      <input id="toca-q" name="q" type="search" placeholder="buscá un tema o artista…" autocomplete="off" />
+    </form>
+
+    <p class="sr-only" aria-live="polite" data-estado></p>
+    <ol class="toca__lista" data-lista aria-label="Canciones"></ol>
+    <div class="toca__aviso" data-aviso hidden>
+      <p data-aviso-texto></p>
+      <button class="toca__chip" type="button" data-reintentar>reintentar</button>
+    </div>
+
+    <p class="toca__credito">Previews y tapas vía la API de búsqueda de iTunes.</p>
+  </section>
+
+  <button
+    class="toca__boton"
+    type="button"
+    data-abrir
+    aria-expanded="false"
+    aria-controls="toca-panel"
+    aria-label="Abrir el tocadiscos"
+  >
+    <span class="mini-vinilo" data-mini aria-hidden="true"></span>
+    <span class="toca__boton-texto" data-boton-texto>música</span>
+  </button>
+</div>
+
+<style>
+  .toca {
+    position: relative;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  /* ---------- Botón flotante ---------- */
+  .toca__boton {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    max-width: 132px;
+    min-height: 48px;
+    padding: 0 16px 0 8px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--papel);
+    color: var(--tinta);
+    font: 500 0.9375rem/1 var(--f-texto);
+    box-shadow: var(--sombra-foto);
+    cursor: pointer;
+    transition: transform 160ms var(--ease-out), background-color 160ms ease;
+  }
+
+  .toca__boton:active {
+    transform: scale(0.96);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .toca__boton:hover {
+      background: #fff;
+    }
+  }
+
+  .toca__boton-texto {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Disquito: gira mientras suena */
+  .mini-vinilo,
+  .vinilo {
+    flex: none;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle, var(--rosa-fuerte) 0 22%, #1b1b1d 23% 27%, transparent 28%),
+      repeating-radial-gradient(circle, #232325 0 1.5px, #161617 1.5px 3px);
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.06), 0 1px 2px rgb(0 0 0 / 0.2);
+    animation: girar 2.4s linear infinite;
+    animation-play-state: paused;
+  }
+
+  .mini-vinilo {
+    width: 32px;
+    height: 32px;
+    background-image:
+      radial-gradient(circle, #fff 0 6%, var(--rosa-fuerte) 7% 26%, transparent 27%),
+      repeating-radial-gradient(circle, #232325 0 1.2px, #161617 1.2px 2.4px);
+  }
+
+  .toca[data-sonando] .mini-vinilo,
+  .toca[data-sonando] .vinilo {
+    animation-play-state: running;
+  }
+
+  @keyframes girar {
+    to {
+      rotate: 360deg;
+    }
+  }
+
+  /* ---------- Panel ---------- */
+  .toca__panel {
+    position: absolute;
+    right: calc(100% + 12px);
+    bottom: 0;
+    width: min(340px, calc(100vw - 32px));
+    max-height: min(560px, calc(100svh - 40px));
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 18px;
+    background: color-mix(in srgb, var(--papel) 92%, transparent);
+    backdrop-filter: blur(16px);
+    box-shadow:
+      0 0 0 1px rgb(0 0 0 / 0.06),
+      0 18px 50px rgb(0 0 0 / 0.18);
+    transform-origin: bottom right;
+    transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out), visibility 0s;
+  }
+
+  .toca__panel[hidden] {
+    display: flex;
+    opacity: 0;
+    transform: scale(0.96) translateY(6px);
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 150ms ease, transform 150ms ease, visibility 0s 150ms;
+  }
+
+  .toca__cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .toca__titulo {
+    font: 400 1.5rem/1 var(--f-mano);
+    letter-spacing: 0;
+    margin: 0;
+  }
+
+  .toca__cerrar {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--tinta) 6%, transparent);
+    color: var(--tinta-suave);
+    cursor: pointer;
+  }
+
+  .toca__ahora {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+  }
+
+  .vinilo {
+    position: relative;
+    width: 96px;
+    height: 96px;
+    display: grid;
+    place-items: center;
+  }
+
+  /* la tapa del disco hace de etiqueta del vinilo */
+  .vinilo__tapa {
+    width: 40%;
+    height: 40%;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .toca__info {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .toca__cancion,
+  .toca__artista {
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .toca__cancion {
+    font-weight: 500;
+    font-size: 0.9375rem;
+  }
+
+  .toca__artista {
+    font-size: 0.8125rem;
+    color: var(--tinta-suave);
+  }
+
+  .toca__barra {
+    height: 4px;
+    margin: 10px 0 8px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--tinta) 10%, transparent);
+    overflow: hidden;
+  }
+
+  .toca__barra span {
+    display: block;
+    height: 100%;
+    width: 100%;
+    background: var(--rosa-fuerte);
+    transform-origin: left;
+    transform: scaleX(var(--p, 0));
+  }
+
+  .toca__botones {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .toca__ctrl {
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--tinta);
+    cursor: pointer;
+    transition: transform 160ms var(--ease-out), opacity 160ms ease;
+  }
+
+  .toca__ctrl:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+
+  .toca__ctrl:not(:disabled):active {
+    transform: scale(0.92);
+  }
+
+  .toca__ctrl--play {
+    width: 44px;
+    height: 44px;
+    background: var(--tinta);
+    color: #fff;
+  }
+
+  .toca__ctrl--play .i-pausa,
+  .toca[data-sonando] .toca__ctrl--play .i-play {
+    display: none;
+  }
+
+  .toca[data-sonando] .toca__ctrl--play .i-pausa {
+    display: block;
+  }
+
+  .toca__ambientes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .toca__chip {
+    font: 500 0.8125rem/1 var(--f-texto);
+    color: var(--tinta);
+    background: color-mix(in srgb, var(--tinta) 6%, transparent);
+    border: 0;
+    border-radius: 999px;
+    padding: 0 12px;
+    min-height: 32px;
+    cursor: pointer;
+    transition: transform 160ms var(--ease-out), background-color 160ms ease;
+  }
+
+  .toca__chip:active {
+    transform: scale(0.96);
+  }
+
+  .toca__chip[aria-pressed="true"] {
+    background: var(--tinta);
+    color: #fff;
+  }
+
+  .toca__buscar input {
+    width: 100%;
+    min-height: 40px;
+    font: 400 1rem var(--f-texto);
+    color: var(--tinta);
+    background: color-mix(in srgb, var(--tinta) 6%, transparent);
+    border: 2px solid transparent;
+    border-radius: 999px;
+    padding: 0 14px;
+  }
+
+  .toca__buscar input:focus {
+    outline: none;
+    background: #fff;
+    border-color: color-mix(in srgb, var(--azul) 55%, transparent);
+  }
+
+  .toca__lista {
+    list-style: none;
+    margin: 0 -6px;
+    padding: 0;
+    overflow-y: auto;
+    min-height: 0;
+    flex: 1;
+    scrollbar-width: thin;
+  }
+
+  .toca__lista :global(button) {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--tinta);
+    text-align: left;
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .toca__lista :global(img),
+  .toca__lista :global(.toca__hueco) {
+    width: 40px;
+    height: 40px;
+    flex: none;
+    border-radius: 6px;
+    background: var(--papel-2);
+    object-fit: cover;
+  }
+
+  .toca__lista :global(.toca__datos) {
+    min-width: 0;
+    display: grid;
+  }
+
+  .toca__lista :global(.toca__datos b),
+  .toca__lista :global(.toca__datos small) {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .toca__lista :global(.toca__datos b) {
+    font-weight: 500;
+    font-size: 0.875rem;
+  }
+
+  .toca__lista :global(.toca__datos small) {
+    font-size: 0.75rem;
+    color: var(--tinta-suave);
+  }
+
+  .toca__lista :global(button[aria-current="true"]) {
+    background: color-mix(in srgb, var(--rosa) 55%, transparent);
+  }
+
+  .toca__lista :global(.toca__esqueleto) {
+    height: 52px;
+    margin: 0 6px 4px;
+    border-radius: 10px;
+    background: var(--papel-2);
+    animation: respirar 1.1s ease-in-out infinite alternate;
+  }
+
+  @keyframes respirar {
+    to {
+      opacity: 0.45;
+    }
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .toca__lista :global(button:hover) {
+      background: color-mix(in srgb, var(--tinta) 5%, transparent);
+    }
+    .toca__chip:not([aria-pressed="true"]):hover {
+      background: color-mix(in srgb, var(--tinta) 11%, transparent);
+    }
+  }
+
+  .toca__aviso {
+    text-align: center;
+    font-size: 0.875rem;
+    color: var(--tinta-suave);
+  }
+
+  .toca__aviso p {
+    margin: 4px 0 10px;
+  }
+
+  .toca__credito {
+    margin: 0;
+    font-size: 0.6875rem;
+    color: var(--gris);
+  }
+
+  /* ---------- Celular: botón redondo y panel como hoja desde abajo ---------- */
+  @media (max-width: 1099px) {
+    .toca__boton {
+      width: 52px;
+      height: 52px;
+      padding: 0;
+      justify-content: center;
+    }
+
+    .toca__boton-texto {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
+
+    .mini-vinilo {
+      width: 36px;
+      height: 36px;
+    }
+
+    .toca__panel {
+      position: fixed;
+      right: 12px;
+      left: 12px;
+      /* arriba de los dos botones flotantes (52 + 10 + 52 + margen) */
+      bottom: calc(138px + env(safe-area-inset-bottom));
+      width: auto;
+      max-height: min(520px, calc(100svh - 160px));
+      transform-origin: bottom center;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mini-vinilo,
+    .vinilo {
+      animation: none;
+    }
+  }
+</style>
+
+<script>
+  const API = "https://itunes.apple.com/search";
+  const LIMITE_MS = 8000;
+
+  interface RegistroItunes {
+    trackId: number;
+    trackName?: string;
+    artistName?: string;
+    previewUrl?: string;
+    artworkUrl100?: string;
+  }
+
+  interface Cancion {
+    id: number;
+    titulo: string;
+    artista: string;
+    audio: string;
+    tapa: string;
+  }
+
+  const aCancion = (r: RegistroItunes): Cancion | null =>
+    r.previewUrl && r.trackName
+      ? {
+          id: r.trackId,
+          titulo: r.trackName,
+          artista: r.artistName ?? "",
+          audio: r.previewUrl,
+          tapa: r.artworkUrl100 ?? "",
+        }
+      : null;
+
+  const raiz = document.querySelector<HTMLElement>("[data-toca]")!;
+  const $ = <T extends HTMLElement>(s: string) => raiz.querySelector<T>(s)!;
+  const panel = $("[data-panel]");
+  const abrir = $<HTMLButtonElement>("[data-abrir]");
+  const botonTexto = $("[data-boton-texto]");
+  const lista = $<HTMLOListElement>("[data-lista]");
+  const estado = $("[data-estado]");
+  const aviso = $("[data-aviso]");
+  const avisoTexto = $("[data-aviso-texto]");
+  const play = $<HTMLButtonElement>("[data-play]");
+  const anterior = $<HTMLButtonElement>("[data-anterior]");
+  const siguiente = $<HTMLButtonElement>("[data-siguiente]");
+  const cancionEl = $("[data-cancion]");
+  const artistaEl = $("[data-artista]");
+  const tapa = $<HTMLImageElement>("[data-tapa]");
+  const progreso = $("[data-progreso]");
+  const chips = [...raiz.querySelectorAll<HTMLButtonElement>(".toca__chip[data-busqueda]")];
+  const form = $<HTMLFormElement>("[data-buscar]");
+
+  const audio = new Audio();
+  audio.preload = "none";
+
+  let canciones: Cancion[] = [];
+  let actual = -1;
+  let busquedaActual = chips[0]?.dataset.busqueda ?? "lofi";
+  let pedido: AbortController | null = null;
+  let cargoAlgo = false;
+
+  // ---------- Abrir / cerrar ----------
+  function mostrarPanel(si: boolean) {
+    panel.hidden = !si;
+    abrir.setAttribute("aria-expanded", String(si));
+    if (si) {
+      if (!cargoAlgo) {
+        cargoAlgo = true;
+        cargar(busquedaActual);
+      }
+      // el foco va al botón principal del panel
+      requestAnimationFrame(() => (play.disabled ? chips[0] : play)?.focus());
+    }
+  }
+
+  abrir.addEventListener("click", () => mostrarPanel(panel.hidden));
+  $("[data-cerrar]").addEventListener("click", () => {
+    mostrarPanel(false);
+    abrir.focus();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !panel.hidden) {
+      mostrarPanel(false);
+      abrir.focus();
+    }
+  });
+
+  // clic afuera: se cierra (la música sigue)
+  document.addEventListener("pointerdown", (e) => {
+    if (!panel.hidden && !raiz.contains(e.target as Node)) mostrarPanel(false);
+  });
+
+  // ---------- Estados de la lista ----------
+  function mostrarCargando() {
+    aviso.hidden = true;
+    lista.setAttribute("aria-busy", "true");
+    estado.textContent = `Buscando “${busquedaActual}”…`;
+    lista.innerHTML = Array.from({ length: 5 }, () => `<li class="toca__esqueleto" aria-hidden="true"></li>`).join("");
+  }
+
+  function mostrarAviso(texto: string, reintentar: boolean) {
+    lista.innerHTML = "";
+    lista.setAttribute("aria-busy", "false");
+    avisoTexto.textContent = texto;
+    $("[data-reintentar]").hidden = !reintentar;
+    aviso.hidden = false;
+    estado.textContent = texto;
+  }
+
+  function mostrarLista() {
+    aviso.hidden = true;
+    lista.setAttribute("aria-busy", "false");
+    estado.textContent = `${canciones.length} canciones de “${busquedaActual}”.`;
+    lista.innerHTML = "";
+    canciones.forEach((c, i) => {
+      const li = document.createElement("li");
+      const b = document.createElement("button");
+      b.type = "button";
+      b.dataset.i = String(i);
+      const img = c.tapa ? document.createElement("img") : document.createElement("span");
+      if (img instanceof HTMLImageElement) {
+        img.src = c.tapa;
+        img.alt = "";
+        img.loading = "lazy";
+        img.width = img.height = 40;
+      } else {
+        img.className = "toca__hueco";
+      }
+      const datos = document.createElement("span");
+      datos.className = "toca__datos";
+      const t = document.createElement("b");
+      t.textContent = c.titulo;
+      const a = document.createElement("small");
+      a.textContent = c.artista;
+      datos.append(t, a);
+      b.append(img, datos);
+      b.setAttribute("aria-label", `Escuchar ${c.titulo}, de ${c.artista}`);
+      b.addEventListener("click", () => reproducir(i));
+      li.append(b);
+      lista.append(li);
+    });
+    marcarActual();
+  }
+
+  // ---------- Pedido a la API ----------
+  async function cargar(busqueda: string) {
+    busquedaActual = busqueda;
+    const clave = `toca-itunes:${busqueda}`;
+    try {
+      const guardado = sessionStorage.getItem(clave);
+      if (guardado) {
+        canciones = JSON.parse(guardado);
+        return resultado();
+      }
+    } catch {}
+
+    pedido?.abort();
+    const ctrl = new AbortController();
+    pedido = ctrl;
+    const reloj = setTimeout(() => ctrl.abort("timeout"), LIMITE_MS);
+    mostrarCargando();
+
+    const params = new URLSearchParams({
+      term: busqueda,
+      media: "music",
+      entity: "song",
+      limit: "25",
+      country: "AR",
+    });
+
+    try {
+      const res = await fetch(`${API}?${params}`, { signal: ctrl.signal });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      canciones = ((json.results ?? []) as RegistroItunes[])
+        .map(aCancion)
+        .filter((c): c is Cancion => c !== null)
+        .slice(0, 15);
+      try {
+        sessionStorage.setItem(clave, JSON.stringify(canciones));
+      } catch {}
+      resultado();
+    } catch (err) {
+      if (ctrl.signal.aborted && ctrl.signal.reason !== "timeout") return;
+      mostrarAviso(
+        ctrl.signal.reason === "timeout"
+          ? "La disquería está tardando en responder. Probá de nuevo."
+          : "No pude traer la música. Revisá tu conexión.",
+        true
+      );
+      console.warn("[tocadiscos]", err);
+    } finally {
+      clearTimeout(reloj);
+    }
+  }
+
+  function resultado() {
+    if (!canciones.length) {
+      mostrarAviso(`No encontré canciones para “${busquedaActual}”. Probá con otro nombre.`, false);
+    } else {
+      mostrarLista();
+    }
+  }
+
+  // ---------- Reproducción ----------
+  // la cola es la lista que estaba cuando elegiste el tema
+  let cola: Cancion[] = [];
+
+  function marcarActual() {
+    const sonando = cola[actual];
+    lista.querySelectorAll<HTMLButtonElement>("button").forEach((b) => {
+      const c = canciones[Number(b.dataset.i)];
+      b.setAttribute("aria-current", String(!!sonando && c?.id === sonando.id));
+    });
+  }
+
+  function reproducir(i: number) {
+    if (cola !== canciones) cola = canciones;
+    if (!cola.length) return;
+    actual = (i + cola.length) % cola.length;
+    const c = cola[actual];
+    audio.src = c.audio;
+    audio.play().catch(() => {
+      /* el navegador puede frenar el audio: queda en pausa */
+    });
+    cancionEl.textContent = c.titulo;
+    artistaEl.textContent = c.artista;
+    botonTexto.textContent = c.titulo;
+    abrir.setAttribute("aria-label", `Tocadiscos: ${c.titulo}, de ${c.artista}`);
+    if (c.tapa) {
+      tapa.src = c.tapa;
+      tapa.hidden = false;
+    }
+    play.disabled = anterior.disabled = siguiente.disabled = false;
+    marcarActual();
+  }
+
+  play.addEventListener("click", () => {
+    if (audio.paused) audio.play().catch(() => {});
+    else audio.pause();
+  });
+  anterior.addEventListener("click", () => reproducir(actual - 1));
+  siguiente.addEventListener("click", () => reproducir(actual + 1));
+
+  audio.addEventListener("play", () => {
+    raiz.dataset.sonando = "";
+    play.setAttribute("aria-label", "Pausar");
+  });
+  audio.addEventListener("pause", () => {
+    delete raiz.dataset.sonando;
+    play.setAttribute("aria-label", "Reproducir");
+  });
+  audio.addEventListener("timeupdate", () => {
+    const p = audio.duration ? audio.currentTime / audio.duration : 0;
+    progreso.style.setProperty("--p", p.toFixed(3));
+  });
+  // cuando termina el preview, sigue con la próxima
+  audio.addEventListener("ended", () => reproducir(actual + 1));
+  // si un preview no carga, lo salteamos (sin entrar en un bucle infinito)
+  let fallidos = 0;
+  audio.addEventListener("error", () => {
+    if (!audio.src || ++fallidos > 3) return;
+    estado.textContent = "Esa canción no cargó, paso a la siguiente.";
+    reproducir(actual + 1);
+  });
+  audio.addEventListener("playing", () => (fallidos = 0));
+
+  // ---------- Ambientes y búsqueda ----------
+  function elegirChip(chip: HTMLButtonElement | null) {
+    chips.forEach((c) => c.setAttribute("aria-pressed", String(c === chip)));
+  }
+
+  chips.forEach((chip) =>
+    chip.addEventListener("click", () => {
+      elegirChip(chip);
+      cargar(chip.dataset.busqueda!);
+    })
+  );
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const q = String(new FormData(form).get("q") ?? "").trim();
+    if (!q) return;
+    elegirChip(null);
+    cargar(q);
+  });
+
+  $("[data-reintentar]").addEventListener("click", () => {
+    try {
+      sessionStorage.removeItem(`toca-itunes:${busquedaActual}`);
+    } catch {}
+    cargar(busquedaActual);
+  });
+</script>

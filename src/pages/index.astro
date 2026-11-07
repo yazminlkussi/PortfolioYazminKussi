@@ -11,6 +11,8 @@ import VentanaMac from "../components/VentanaMac.astro";
 import Seleccion from "../components/Seleccion.astro";
 import NotaMano from "../components/NotaMano.astro";
 import Carpeta from "../components/Carpeta.astro";
+import Lapiz from "../components/Lapiz.astro";
+import Tocadiscos from "../components/Tocadiscos.astro";
 import { proyectos } from "../data/proyectos";
 
 // El índice se arma solo: tapa, sobre mí, un proyecto por hoja, inspo, mesa y contacto
@@ -32,6 +34,16 @@ const temasMoodboard = [
   { etiqueta: "packaging", busqueda: "packaging" },
   { etiqueta: "fotografía", busqueda: "photograph" },
   { etiqueta: "flores", busqueda: "flowers" },
+];
+
+// Ambientes del tocadiscos (búsquedas en la API de iTunes)
+const ambientes = [
+  { etiqueta: "lo-fi", busqueda: "lofi" },
+  { etiqueta: "pop", busqueda: "pop hits" },
+  { etiqueta: "indie", busqueda: "indie" },
+  { etiqueta: "bossa nova", busqueda: "bossa nova" },
+  { etiqueta: "jazz", busqueda: "jazz" },
+  { etiqueta: "electrónica", busqueda: "electronic" },
 ];
 
 const stickers = [
@@ -175,6 +187,12 @@ const stickers = [
         </p>
       </section>
     </Cuaderno>
+
+    <!-- Estuche flotante: música y lápiz, siempre a mano mientras recorrés el cuaderno -->
+    <div class="estuche">
+      <Tocadiscos ambientes={ambientes} />
+      <Lapiz />
+    </div>
   </main>
 </Base>
 
@@ -189,6 +207,32 @@ const stickers = [
     max-width: 56ch;
     color: var(--tinta-suave);
     margin: 18px 0 0;
+  }
+
+  /* ---------- Estuche flotante (tocadiscos + lápiz) ---------- */
+  .estuche {
+    position: fixed;
+    z-index: 20;
+    right: calc(12px + env(safe-area-inset-right));
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+  }
+
+  @media (max-width: 1099px) {
+    /* lugar para que los botones flotantes no tapen el pie del cuaderno */
+    main {
+      padding-bottom: 136px;
+    }
+  }
+
+  @media (min-width: 1100px) {
+    .estuche {
+      right: 22px;
+      bottom: 18px;
+    }
   }
 
   /* ---------- Inspo: tablero que llena la hoja ---------- */

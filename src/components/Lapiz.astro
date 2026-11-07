@@ -1,0 +1,460 @@
+---
+// Lápiz: garabatear sobre cualquier hoja del cuaderno.
+// Cada hoja recibe (cuando hace falta) un <canvas class="garabato"> encima de todo.
+// Como el canvas vive DENTRO de la hoja, cuando la pasás el dibujo se va con ella.
+// Los trazos se guardan normalizados (relativos al ancho de la hoja) en localStorage,
+// así se redibujan bien aunque cambie el tamaño de la ventana.
+---
+
+<div class="lapiz" data-lapiz>
+  <div class="lapiz__estuche" role="toolbar" aria-label="Herramientas de dibujo" data-estuche hidden>
+    <button class="lapiz__tinta" type="button" data-tinta="lapiz" aria-pressed="true" aria-label="Lápiz negro">
+      <span style="--c: #1d1d1f"></span>
+    </button>
+    <button class="lapiz__tinta" type="button" data-tinta="birome" aria-pressed="false" aria-label="Birome azul">
+      <span style="--c: #0a63d6"></span>
+    </button>
+    <button class="lapiz__tinta" type="button" data-tinta="resaltador" aria-pressed="false" aria-label="Resaltador rosa">
+      <span class="ancha" style="--c: #ff8db1"></span>
+    </button>
+    <span class="lapiz__sep" aria-hidden="true"></span>
+    <button class="lapiz__accion" type="button" data-deshacer aria-label="Deshacer el último trazo">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"
+        ><path d="M9 14 4 9l5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+        ></path><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        ></path></svg
+      >
+    </button>
+    <button class="lapiz__accion" type="button" data-borrar aria-label="Borrar los dibujos de esta hoja">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"
+        ><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round"></path></svg
+      >
+    </button>
+  </div>
+
+  <button class="lapiz__boton" type="button" data-alternar aria-pressed="false">
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+      <path d="M15.2 5.2 18.8 8.8 8.5 19.1l-4.6 1 1-4.6z" fill="#ffd36e" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path>
+      <path d="M15.2 5.2 16.9 3.5a1.5 1.5 0 0 1 2.1 0l1.5 1.5a1.5 1.5 0 0 1 0 2.1L18.8 8.8z" fill="#ff8db1" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path>
+      <path d="M4.9 15.5 8.5 19.1" stroke="currentColor" stroke-width="1.6"></path>
+    </svg>
+    <span class="lapiz__texto" data-texto>dibujar</span>
+  </button>
+
+  <p class="sr-only" aria-live="polite" data-aviso></p>
+</div>
+
+<style>
+  .lapiz {
+    position: relative;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  /* Botón principal: misma familia que las pestañas del índice */
+  .lapiz__boton {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 48px;
+    padding: 0 16px 0 13px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--papel);
+    color: var(--tinta);
+    font: 500 0.9375rem/1 var(--f-texto);
+    box-shadow: var(--sombra-foto);
+    cursor: pointer;
+    transition: transform 160ms var(--ease-out), background-color 160ms ease;
+  }
+
+  .lapiz__boton:active {
+    transform: scale(0.96);
+  }
+
+  .lapiz__boton[aria-pressed="true"] {
+    background: var(--tinta);
+    color: #fff;
+  }
+
+  /* Estuche de herramientas: sale hacia la izquierda del botón */
+  .lapiz__estuche {
+    position: absolute;
+    right: calc(100% + 8px);
+    bottom: 2px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px;
+    border-radius: 999px;
+    background: var(--papel);
+    box-shadow: var(--sombra-foto);
+    transform-origin: right center;
+    transition: opacity 180ms var(--ease-out), transform 180ms var(--ease-out);
+  }
+
+  .lapiz__estuche[hidden] {
+    display: flex;
+    opacity: 0;
+    transform: scale(0.94) translateX(6px);
+    pointer-events: none;
+    visibility: hidden;
+  }
+
+  .lapiz__tinta,
+  .lapiz__accion {
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--tinta-suave);
+    cursor: pointer;
+    transition: transform 160ms var(--ease-out), background-color 160ms ease;
+  }
+
+  .lapiz__tinta:active,
+  .lapiz__accion:active {
+    transform: scale(0.92);
+  }
+
+  .lapiz__tinta span {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--c);
+    box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.12);
+  }
+
+  .lapiz__tinta span.ancha {
+    width: 20px;
+    height: 12px;
+    border-radius: 3px;
+    rotate: -20deg;
+    opacity: 0.85;
+  }
+
+  .lapiz__tinta[aria-pressed="true"] {
+    background: color-mix(in srgb, var(--tinta) 9%, transparent);
+  }
+
+  .lapiz__sep {
+    width: 1px;
+    height: 22px;
+    background: var(--linea);
+    margin-inline: 2px;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .lapiz__boton:not([aria-pressed="true"]):hover {
+      background: #fff;
+    }
+
+    .lapiz__accion:hover,
+    .lapiz__tinta:not([aria-pressed="true"]):hover {
+      background: color-mix(in srgb, var(--tinta) 6%, transparent);
+      color: var(--tinta);
+    }
+  }
+
+  /* En celular: botón redondo, solo el ícono */
+  @media (max-width: 1099px) {
+    .lapiz__boton {
+      width: 52px;
+      height: 52px;
+      padding: 0;
+      justify-content: center;
+    }
+
+    .lapiz__texto {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
+  }
+
+  /* ---------- El canvas que se monta en cada hoja ---------- */
+  :global(.garabato) {
+    position: absolute;
+    inset: 0;
+    z-index: 6;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    border-radius: inherit;
+  }
+
+  :global(html[data-dibujando] .hoja:not([hidden]) .garabato) {
+    pointer-events: auto;
+    touch-action: none;
+    cursor:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M15.2 5.2 18.8 8.8 8.5 19.1l-4.6 1 1-4.6z' fill='%23ffd36e' stroke='%23161616' stroke-width='1.4' stroke-linejoin='round'/%3E%3Cpath d='M15.2 5.2 16.9 3.5a1.5 1.5 0 0 1 2.1 0l1.5 1.5a1.5 1.5 0 0 1 0 2.1L18.8 8.8z' fill='%23ff8db1' stroke='%23161616' stroke-width='1.4'/%3E%3C/svg%3E")
+        3 21,
+      crosshair;
+  }
+</style>
+
+<script>
+  type Tinta = "lapiz" | "birome" | "resaltador";
+  type Punto = [number, number]; // relativo al ancho de la hoja (0..1, y puede pasar de 1)
+  interface Trazo {
+    t: Tinta;
+    p: Punto[];
+  }
+
+  const CLAVE = "cuaderno-garabatos-v1";
+  const TINTAS: Record<Tinta, { color: string; ancho: number; alfa: number; mezcla: GlobalCompositeOperation }> = {
+    lapiz: { color: "#1d1d1f", ancho: 0.0028, alfa: 0.92, mezcla: "source-over" },
+    birome: { color: "#0a63d6", ancho: 0.0022, alfa: 0.95, mezcla: "source-over" },
+    resaltador: { color: "#ff8db1", ancho: 0.016, alfa: 0.45, mezcla: "multiply" },
+  };
+
+  const raiz = document.querySelector<HTMLElement>("[data-lapiz]")!;
+  const alternar = raiz.querySelector<HTMLButtonElement>("[data-alternar]")!;
+  const texto = raiz.querySelector<HTMLElement>("[data-texto]")!;
+  const estuche = raiz.querySelector<HTMLElement>("[data-estuche]")!;
+  const tintas = [...raiz.querySelectorAll<HTMLButtonElement>("[data-tinta]")];
+  const aviso = raiz.querySelector<HTMLElement>("[data-aviso]")!;
+
+  let tinta: Tinta = "lapiz";
+  let dibujando = false;
+
+  // ---------- Guardado ----------
+  let dibujos: Record<string, Trazo[]> = {};
+  try {
+    dibujos = JSON.parse(localStorage.getItem(CLAVE) ?? "{}");
+  } catch {
+    dibujos = {};
+  }
+
+  function guardar() {
+    try {
+      localStorage.setItem(CLAVE, JSON.stringify(dibujos));
+    } catch {
+      /* sin localStorage: el dibujo vive hasta que recargues */
+    }
+  }
+
+  // Lo último que borraste entero, por si querés deshacerlo
+  const borradoPorHoja: Record<string, Trazo[]> = {};
+
+  // ---------- Canvas por hoja ----------
+  const lienzos = new Map<HTMLElement, HTMLCanvasElement>();
+
+  const hojaActual = () => document.querySelector<HTMLElement>("[data-hojas] .hoja:not([hidden])");
+  const idDe = (hoja: HTMLElement) => hoja.dataset.hoja ?? "";
+
+  const observador = new ResizeObserver((entradas) => {
+    for (const e of entradas) {
+      const c = lienzos.get(e.target as HTMLElement);
+      if (c) dimensionar(e.target as HTMLElement, c);
+    }
+  });
+
+  function lienzoDe(hoja: HTMLElement) {
+    let c = lienzos.get(hoja);
+    if (!c) {
+      c = document.createElement("canvas");
+      c.className = "garabato";
+      c.setAttribute("aria-hidden", "true");
+      hoja.append(c);
+      lienzos.set(hoja, c);
+      escucharTrazos(hoja, c);
+      observador.observe(hoja);
+      dimensionar(hoja, c);
+    }
+    return c;
+  }
+
+  function dimensionar(hoja: HTMLElement, c: HTMLCanvasElement) {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = hoja.clientWidth;
+    const h = hoja.clientHeight;
+    if (!w || !h) return;
+    c.width = Math.round(w * dpr);
+    c.height = Math.round(h * dpr);
+    redibujar(hoja);
+  }
+
+  function pintarTrazo(ctx: CanvasRenderingContext2D, trazo: Trazo, ancho: number) {
+    const t = TINTAS[trazo.t];
+    const p = trazo.p.map(([x, y]) => [x * ancho, y * ancho] as const);
+    if (!p.length) return;
+    ctx.save();
+    ctx.globalAlpha = t.alfa;
+    ctx.globalCompositeOperation = t.mezcla;
+    ctx.strokeStyle = t.color;
+    ctx.fillStyle = t.color;
+    ctx.lineWidth = Math.max(trazo.t === "resaltador" ? 10 : 1.8, t.ancho * ancho);
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.beginPath();
+    if (p.length === 1) {
+      // un toque: un puntito
+      ctx.arc(p[0][0], p[0][1], ctx.lineWidth / 2, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // curvas por los puntos medios: el trazo sale suave, como a mano
+      ctx.moveTo(p[0][0], p[0][1]);
+      for (let i = 1; i < p.length - 1; i++) {
+        const mx = (p[i][0] + p[i + 1][0]) / 2;
+        const my = (p[i][1] + p[i + 1][1]) / 2;
+        ctx.quadraticCurveTo(p[i][0], p[i][1], mx, my);
+      }
+      const u = p[p.length - 1];
+      ctx.lineTo(u[0], u[1]);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function redibujar(hoja: HTMLElement, extra?: Trazo) {
+    const c = lienzos.get(hoja);
+    if (!c) return;
+    const ctx = c.getContext("2d")!;
+    const dpr = c.width / (hoja.clientWidth || 1);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, c.width, c.height);
+    const ancho = hoja.clientWidth;
+    for (const t of dibujos[idDe(hoja)] ?? []) pintarTrazo(ctx, t, ancho);
+    if (extra) pintarTrazo(ctx, extra, ancho);
+  }
+
+  // ---------- Dibujar con el puntero ----------
+  function escucharTrazos(hoja: HTMLElement, c: HTMLCanvasElement) {
+    let trazo: Trazo | null = null;
+    let id = -1;
+    let cuadro = 0;
+
+    const punto = (e: PointerEvent): Punto => {
+      const r = c.getBoundingClientRect();
+      const escala = r.width || 1;
+      return [+((e.clientX - r.left) / escala).toFixed(4), +((e.clientY - r.top) / escala).toFixed(4)];
+    };
+
+    c.addEventListener("pointerdown", (e) => {
+      if (!dibujando || trazo) return; // un solo dedo a la vez
+      e.preventDefault();
+      e.stopPropagation();
+      id = e.pointerId;
+      try {
+        c.setPointerCapture(id);
+      } catch {}
+      trazo = { t: tinta, p: [punto(e)] };
+      redibujar(hoja, trazo);
+    });
+
+    c.addEventListener("pointermove", (e) => {
+      if (!trazo || e.pointerId !== id) return;
+      // los eventos "coalesced" dan más puntos y una línea más fluida
+      const eventos = e.getCoalescedEvents?.() ?? [e];
+      for (const ev of eventos.length ? eventos : [e]) trazo.p.push(punto(ev));
+      if (!cuadro) {
+        cuadro = requestAnimationFrame(() => {
+          cuadro = 0;
+          if (trazo) redibujar(hoja, trazo);
+        });
+      }
+    });
+
+    const terminar = (e: PointerEvent) => {
+      if (!trazo || e.pointerId !== id) return;
+      const clave = idDe(hoja);
+      (dibujos[clave] ??= []).push(trazo);
+      delete borradoPorHoja[clave];
+      trazo = null;
+      redibujar(hoja);
+      guardar();
+    };
+    c.addEventListener("pointerup", terminar);
+    c.addEventListener("pointercancel", terminar);
+  }
+
+  // ---------- Modo dibujo ----------
+  function activar(si: boolean) {
+    dibujando = si;
+    alternar.setAttribute("aria-pressed", String(si));
+    texto.textContent = si ? "listo" : "dibujar";
+    estuche.hidden = !si;
+    if (si) {
+      document.documentElement.dataset.dibujando = "";
+      const hoja = hojaActual();
+      if (hoja) lienzoDe(hoja);
+      aviso.textContent = "Modo dibujo activado. Dibujá sobre la hoja. Escape para salir.";
+    } else {
+      delete document.documentElement.dataset.dibujando;
+      aviso.textContent = "Modo dibujo desactivado.";
+    }
+  }
+
+  alternar.addEventListener("click", () => activar(!dibujando));
+
+  tintas.forEach((b) =>
+    b.addEventListener("click", () => {
+      tinta = b.dataset.tinta as Tinta;
+      tintas.forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+    })
+  );
+
+  function deshacer() {
+    const hoja = hojaActual();
+    if (!hoja) return;
+    const clave = idDe(hoja);
+    if (borradoPorHoja[clave]) {
+      dibujos[clave] = borradoPorHoja[clave];
+      delete borradoPorHoja[clave];
+    } else {
+      dibujos[clave]?.pop();
+    }
+    lienzoDe(hoja);
+    redibujar(hoja);
+    guardar();
+  }
+
+  raiz.querySelector("[data-deshacer]")!.addEventListener("click", deshacer);
+
+  raiz.querySelector("[data-borrar]")!.addEventListener("click", () => {
+    const hoja = hojaActual();
+    if (!hoja) return;
+    const clave = idDe(hoja);
+    if (!dibujos[clave]?.length) return;
+    borradoPorHoja[clave] = dibujos[clave];
+    dibujos[clave] = [];
+    redibujar(hoja);
+    guardar();
+    aviso.textContent = "Hoja limpia. Podés deshacerlo.";
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (!dibujando) return;
+    if (e.key === "Escape") activar(false);
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
+      e.preventDefault();
+      deshacer();
+    }
+  });
+
+  // ---------- Mostrar lo que ya estaba dibujado ----------
+  function montarGuardados() {
+    document.querySelectorAll<HTMLElement>("[data-hojas] .hoja").forEach((hoja) => {
+      if (dibujos[idDe(hoja)]?.length) lienzoDe(hoja);
+    });
+  }
+  montarGuardados();
+
+  // Al pasar de hoja: si estás dibujando, la nueva hoja ya tiene su canvas listo
+  window.addEventListener("cuaderno:hoja", (e) => {
+    const id = (e as CustomEvent<{ id?: string }>).detail?.id;
+    const hoja = id ? document.querySelector<HTMLElement>(`[data-hojas] [data-hoja="${id}"]`) : hojaActual();
+    if (!hoja) return;
+    if (dibujando || dibujos[idDe(hoja)]?.length) {
+      const c = lienzoDe(hoja);
+      dimensionar(hoja, c);
+    }
+  });
+</script>
