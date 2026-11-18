@@ -19,7 +19,7 @@ const idTitulo = `${p.slug}-titulo`;
 const [img1, img2] = p.imagenes ?? [];
 ---
 
-<section class="hoja" data-hoja={p.slug} data-nombre={p.titulo} aria-labelledby={idTitulo}>
+<section class="hoja hp-hoja" data-hoja={p.slug} data-nombre={p.titulo} aria-labelledby={idTitulo}>
   <div class="hp">
     <div class="hp__texto">
       <p class="etiqueta">proyecto {String(numero).padStart(2, "0")} · {p.tipo} · {p.anio}</p>
@@ -174,7 +174,7 @@ const [img1, img2] = p.imagenes ?? [];
 
   .hp__titulo {
     font-size: clamp(2.75rem, 7vw, 5rem);
-    margin: 18px 0 22px;
+    margin: var(--e-3) 0 var(--e-4);
   }
 
   .hp__resumen {
@@ -220,9 +220,16 @@ const [img1, img2] = p.imagenes ?? [];
       gap: clamp(32px, 4vw, 64px);
     }
 
+    /* el contenido se centra en el alto de la hoja: sin un bloque vacío abajo */
+    .hp-hoja {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
     .hp__titulo {
       font-size: clamp(2.5rem, 7svh, 4.25rem);
-      margin: 8px 0 14px;
+      margin: var(--e-3) 0 var(--e-4);
     }
 
     .hp__resumen {
@@ -260,7 +267,7 @@ const [img1, img2] = p.imagenes ?? [];
   }
 
   /* Pantallas de notebook más bajitas: un punto menos de texto */
-  @media (min-width: 1100px) and (min-height: 640px) and (max-height: 820px) {
+  @media (min-width: 1100px) and (min-height: 640px) and (max-height: 1040px) {
     .hp__resumen {
       font-size: 1rem;
     }

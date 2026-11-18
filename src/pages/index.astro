@@ -86,12 +86,11 @@ const stickers = [
           <Carpeta nombre="inspo" href="#inspo" color="azul" />
         </div>
 
-        <p class="tapa__burbuja" aria-hidden="true">agarrá la esquina y pasá la hoja ↘</p>
         <NotaMano class="tapa__nota" flecha="ninguna" giro={-4}>cada hoja, un proyecto</NotaMano>
       </section>
 
       <!-- 02 · Sobre mí -->
-      <section class="hoja" data-hoja="yo" data-nombre="sobre mí" aria-labelledby="yo-titulo">
+      <section class="hoja yo-hoja" data-hoja="yo" data-nombre="sobre mí" aria-labelledby="yo-titulo">
         <div class="yo">
           <div class="yo__foto">
             <VentanaMac titulo="yo.jpg" giro={-2}>
@@ -195,13 +194,13 @@ const stickers = [
   /* ---------- Títulos comunes de hoja ---------- */
   .hoja__titulo {
     font-size: clamp(2.5rem, 6vw, 4.25rem);
-    margin: 14px 0 0;
+    margin: var(--e-3) 0 0;
   }
 
   .hoja__bajada {
     max-width: 56ch;
     color: var(--tinta-suave);
-    margin: 18px 0 0;
+    margin: var(--e-4) 0 0;
   }
 
   /* ---------- Estuche flotante (tocadiscos + lápiz) ---------- */
@@ -240,12 +239,31 @@ const stickers = [
 
     .inspo .hoja__titulo {
       font-size: clamp(2.25rem, 6svh, 3.5rem);
-      margin-top: 8px;
     }
 
     .inspo .hoja__bajada {
-      margin-top: 10px;
       font-size: 0.9375rem;
+    }
+  }
+
+  /* ---------- Composición centrada en escritorio ---------- */
+  @media (min-width: 1100px) and (min-height: 640px) {
+    .yo-hoja {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .hoja[data-hoja="mesa"] {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    /* contacto: título y diálogo comparten el centro de la hoja; la firma queda al pie */
+    .chau__grilla {
+      flex: 1;
+      align-content: center;
     }
   }
 
@@ -391,16 +409,16 @@ const stickers = [
 
   .yo__titulo {
     font-size: clamp(2.5rem, 6vw, 4rem);
-    margin: 12px 0 24px;
+    margin: var(--e-3) 0 var(--e-5);
   }
 
   .yo__texto :global(p:not(.etiqueta)) {
     font-size: 1.125rem;
-    margin: 0 0 16px;
+    margin: 0 0 var(--e-4);
   }
 
   .yo__intereses {
-    margin-top: 24px;
+    margin-top: var(--e-5);
   }
 
   /* ---------- Contacto ---------- */
@@ -427,7 +445,7 @@ const stickers = [
     font-size: clamp(2.75rem, 8vw, 6rem);
     font-weight: 300;
     letter-spacing: -0.06em;
-    margin: 14px 0 32px;
+    margin: var(--e-3) 0 0;
   }
 
   .chau__dialogo {
