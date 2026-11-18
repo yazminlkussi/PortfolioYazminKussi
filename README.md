@@ -218,8 +218,9 @@ guardado y aparece cuando llegás.
 
 ## Limitaciones y mejoras posibles
 
-- Las ventanas de los proyectos muestran composiciones CSS. Falta reemplazarlas por capturas reales
-  (campo `imagenes` en `src/data/proyectos.ts`) y poner mi foto en "sobre mí".
+- Nodo y Dunkin' ya muestran imágenes reales (las de Dunkin' salen de las aplicaciones del manual de
+  marca). El karaoke todavía usa composiciones CSS y falta poner mi foto en "sobre mí"
+  (campo `imagenes` en `src/data/proyectos.ts`).
 - El moodboard busca mejor en inglés (es la lengua de la API). Podría traducir los temas automáticamente.
 - El collage y los dibujos se guardan solo en tu navegador. Una mejora sería poder exportarlos como imagen.
 - Los ambientes del tocadiscos son búsquedas genéricas: la idea es reemplazarlos por la música que yo

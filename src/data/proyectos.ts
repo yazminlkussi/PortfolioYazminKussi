@@ -71,19 +71,33 @@ export const proyectos: Proyecto[] = [
   {
     slug: "dunkin",
     titulo: "Dunkin', versión de lujo",
-    tipo: "Rediseño de marca · identidad",
+    tipo: "Rediseño de marca · manual de identidad",
     anio: "2026",
     resumen:
-      "¿Qué pasa si una marca masiva y pop se vuelve cara y elegante? Un ejercicio de reposicionamiento.",
+      "Dunkin pero con elegancia: la cafetería de barrio con aire de pastelería de autor.",
     descripcion: [
-      "Tomé una marca conocida por ser accesible, colorida y cotidiana y la llevé a un universo premium: la misma dona y el mismo café, pero contados como un objeto de deseo.",
-      "El trabajo pasa por la tipografía, la paleta, el packaging y el tono: menos ruido, más aire y detalles que se sienten caros.",
-      "Proyecto académico y personal, sin relación oficial con la marca.",
+      "Tomé una marca masiva, pop y colorida y la llevé a un universo refinado y cálido. El propósito: regalar un momento de pausa dulce en medio del ritmo diario. Su personalidad: elegante, cálida y artesanal.",
+      "Armé el manual de identidad completo: logotipo y monograma DD con su área de seguridad y tamaños mínimos, una paleta de bordó, bordó profundo, crema y arena, y la tipografía The Seasons para títulos con Cormorant para el texto.",
+      "El sistema se completa con patrones de donas a línea y del monograma repetido, aplicados en vasos, bolsas, cartelería y menú. Proyecto académico, sin relación oficial con la marca.",
     ],
-    rol: "Dirección de arte e identidad visual",
+    rol: "Concepto, identidad visual y manual de marca",
     herramientas: ["Illustrator", "Photoshop", "Figma"],
-    nota: "en proceso ✶",
+    nota: "una pausa dulce ✶",
     portada: "marca",
-    archivos: ["dunkin_lux.jpg", "paleta.png"],
+    archivos: ["carteleria.jpg", "vaso_bandeja.jpg"],
+    imagenes: [
+      {
+        src: "/proyectos/dunkin-carteleria.jpg",
+        alt: "Cuadro bordó con el patrón del monograma DD y la palabra DUNKIN en crema, colgado en una pared en penumbra.",
+        ancho: 1000,
+        alto: 747,
+      },
+      {
+        src: "/proyectos/dunkin-vaso.jpg",
+        alt: "Vaso de café bordó con el logo DUNKIN sobre una bandeja, junto a una servilleta con el patrón del monograma.",
+        ancho: 640,
+        alto: 482,
+      },
+    ],
   },
 ];
