@@ -146,7 +146,13 @@ const [img1, img2] = p.imagenes ?? [];
       {p.nota && <NotaMano class="hp__nota" flecha="abajo-izquierda" giro={-4}>{p.nota}</NotaMano>}
 
       <div class="hp__carpeta">
-        <Carpeta nombre={p.slug} />
+        {
+          p.carpeta ? (
+            <Carpeta nombre={p.carpeta.nombre} href={p.carpeta.href} etiqueta={p.carpeta.etiqueta} nueva />
+          ) : (
+            <Carpeta nombre={p.slug} />
+          )
+        }
       </div>
     </div>
   </div>

@@ -1,4 +1,4 @@
-# Cuaderno — Portfolio de Yazmin Kussi
+# Cuaderno · Portfolio de Yazmin Kussi
 
 Examen final de **Programación Multimedial IV**.
 
@@ -92,7 +92,7 @@ src/
 │   ├── VentanaMac.astro       (visual) ventana que hace de marco
 │   ├── Seleccion.astro        (visual) cuadro de selección con manijas
 │   ├── NotaMano.astro         (visual) nota escrita a mano con flecha
-│   └── Carpeta.astro          (visual) carpeta tipo Finder, puede ser link
+│   └── Carpeta.astro          (visual) carpeta tipo Finder, puede ser link o abrir un PDF
 ├── data/proyectos.ts          contenido de los proyectos
 ├── layouts/Base.astro         <head>, fuentes, "saltar al contenido"
 ├── pages/index.astro          arma el cuaderno

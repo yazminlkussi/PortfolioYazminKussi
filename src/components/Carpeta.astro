@@ -5,13 +5,23 @@ interface Props {
   nombre: string;
   href?: string;
   color?: "rosa" | "azul";
+  /** abre en otra pestaña (por ejemplo, un PDF) */
+  nueva?: boolean;
+  /** texto para lectores de pantalla, cuando el nombre solo no alcanza */
+  etiqueta?: string;
 }
 
-const { nombre, href, color = "rosa" } = Astro.props;
+const { nombre, href, color = "rosa", nueva = false, etiqueta } = Astro.props;
 const Etiqueta = href ? "a" : "div";
 ---
 
-<Etiqueta class:list={["carpeta", `carpeta--${color}`]} href={href}>
+<Etiqueta
+  class:list={["carpeta", `carpeta--${color}`]}
+  href={href}
+  target={nueva ? "_blank" : undefined}
+  rel={nueva ? "noopener" : undefined}
+  aria-label={etiqueta}
+>
   <svg viewBox="0 0 80 62" aria-hidden="true">
     <path class="carpeta__atras" d="M4 6a5 5 0 0 1 5-5h20l6 7h36a5 5 0 0 1 5 5v42a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z" />
     <path class="carpeta__frente" d="M2 20a5 5 0 0 1 5-5h66a5 5 0 0 1 5 5v35a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5z" />
@@ -59,6 +69,12 @@ const Etiqueta = href ? "a" : "div";
     letter-spacing: 0.02em;
   }
 
+  /* Si es un link, la carpeta se entreabre al pasar el mouse */
+  .carpeta__frente {
+    transform-origin: 50% 100%;
+    transition: transform 200ms var(--ease-out);
+  }
+
   a.carpeta:active {
     transform: scale(0.96);
   }
@@ -66,6 +82,10 @@ const Etiqueta = href ? "a" : "div";
   @media (hover: hover) and (pointer: fine) {
     a.carpeta:hover {
       background: color-mix(in srgb, var(--azul) 12%, transparent);
+    }
+
+    a.carpeta:hover .carpeta__frente {
+      transform: perspective(200px) rotateX(-14deg);
     }
   }
 </style>

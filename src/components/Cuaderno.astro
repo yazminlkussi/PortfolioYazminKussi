@@ -551,7 +551,7 @@ const dos = (n: number) => String(n).padStart(2, "0");
     btnAnterior.setAttribute("aria-disabled", String(n === 0));
     btnSiguiente.setAttribute("aria-disabled", String(n === total - 1));
     raiz.toggleAttribute("data-ultima", n === total - 1);
-    document.title = `${hojas[n].dataset.nombre} — Yazmin Kussi`;
+    document.title = `${hojas[n].dataset.nombre} · Yazmin Kussi`;
 
     const hoja = hojas[n];
     hoja.focus({ preventScroll: true });

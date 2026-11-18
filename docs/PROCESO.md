@@ -4,12 +4,11 @@
 
 ## 1. El problema de comunicación
 
-Quería un portfolio que no se leyera como un currículum, sino que mostrara cómo soy: risueña,
-extrovertida, curiosa y muy visual. Me muevo entre el diseño visual, la programación y la imagen
-(foto y video), y fuera de la facu me definen la música, el arte, el cine y la lectura.
+Quería un portfolio que no se leyera como un currículum y que mostrara cómo trabajo. Me muevo entre el
+diseño visual, la programación y la imagen (foto y video), y fuera de la facu me definen la música, el
+arte, el cine y la lectura.
 
-El desafío: **que se sienta hecho a mano y personal, pero que siga siendo estético y prolijo.**
-Colorido, pero no saturado.
+Tenía que sentirse hecho a mano y personal sin perder prolijidad. Colorido, pero no saturado.
 
 ## 2. Conceptos explorados
 
@@ -59,8 +58,8 @@ Decisiones que tomé a partir de eso:
 - Las capturas de proyectos van dentro de **ventanas de macOS** que hacen de marco de foto.
 - Los stickers de la mesa ahora son **stickers de interfaz** (carpeta, burbuja, archivo, menú, switch,
   cursor).
-- Sumé el **interruptor profesional / personal** en "sobre mí": así el switch no es solo decorativo, sino que
-  cambia lo que leés.
+- Sumé el **interruptor profesional / personal** en "sobre mí". Quería que el switch tuviera una función
+  real, y la tiene: cambia el texto que leés.
 
 Lo que se mantuvo de la primera versión: la API del museo, los estados, la mesa con física y el criterio
 de animación.
@@ -80,6 +79,23 @@ agarrar la hoja** y que el cuaderno fuera **más realista**.
   pide que arrastrar nunca sea la única forma.
 
 ✍️ _Qué se siente distinto al usarlo:_
+
+### Cuarta iteración: pulir y completar
+
+- **Cada hoja entra en la pantalla.** En escritorio la hoja ocupa el alto de la ventana y no hace falta
+  scrollear. Para lograrlo ajusté tamaños de texto, el ancho de las columnas y el alto de la mesa, y lo
+  medí en 1900 × 1000 y en una notebook de 1366 × 768.
+- **Inspo pasó a ser un tablero tipo Pinterest.** Grilla masonry, imágenes sin marco, el botón "Pegar"
+  aparece al pasar el mouse (en celular queda siempre visible) y el tablero scrollea por dentro.
+- **Dos herramientas flotantes.** Un lápiz para dibujar sobre las hojas (el dibujo vive dentro de cada
+  hoja, así que gira con ella) y un tocadiscos con la API de iTunes, porque la música también es parte
+  de cómo me inspiro.
+- **Contacto directo.** El formulario dejó de abrir el programa de correo y ahora envía el mensaje con
+  FormSubmit. El servicio se cayó durante las pruebas (500 después de 50 s), así que sumé un aviso de
+  demora y un plan B por `mailto:` para que el mensaje no se pierda.
+- **Información real en los proyectos.** El karaoke lo reescribí a partir de la presentación y el
+  glosario de Redes y Tecnología, y Dunkin' a partir del manual de marca. Del manual saqué dos fotos de
+  aplicaciones y una copia liviana del PDF (de 52 MB a 26 MB) que se abre desde la carpeta de la hoja.
 
 ## 4. Cómo evolucionó la estructura
 
@@ -144,7 +160,7 @@ Seguí la filosofía de diseño de interfaces de Emil Kowalski:
 
 ## 8. Pendiente / mejorable
 
-- Reemplazar las tapas CSS de los proyectos por capturas reales.
+- Capturas reales del karaoke y mi foto en "sobre mí" (Nodo y Dunkin' ya tienen imágenes reales).
 - ~~Completar mis links de contacto~~ → decidí no mostrar redes ni el mail suelto: el diálogo "Nuevo proyecto" ahora manda el mensaje directo a mi casilla (vía FormSubmit) en vez de abrir el programa de correo de quien visita.
 - Sumar más proyectos (hay un lugar reservado: "este espacio está esperando el próximo recorte").
 - Exportar el collage como imagen.
@@ -159,6 +175,8 @@ Usé **Claude (Anthropic)** como asistente durante el proceso.
 - Generar la primera versión del código de los componentes, el CSS y este README.
 - Probar el sitio en el navegador (escritorio y celular) y detectar errores (API bloqueada, cinta
   encima del texto, eventos duplicados).
+- Extraer información de mis PDFs (presentación del karaoke y manual de Dunkin') y ajustar la
+  redacción de los textos del sitio a partir de lo que yo le pasé.
 
 **Decisiones que tomé yo:**
 - El concepto (primero fanzine / collage, después cuaderno de escritorio) y la estética.
