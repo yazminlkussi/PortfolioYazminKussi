@@ -186,7 +186,9 @@ guardado y aparece cuando llegás.
   - **Lentitud:** FormSubmit a veces tarda en responder (medí 20 s en un primer pedido y 0,3 s en el
     siguiente). Si pasan 6 s, el diálogo avisa "el servicio está lento, sigue enviándose…".
   - **Error o timeout (30 s):** el mensaje no se borra, así se puede reintentar sin volver a escribir.
-    Si no hay conexión, lo dice.
+    Si no hay conexión, lo dice. Además aparece un **plan B**: un link que abre el correo de quien
+    visita con el mensaje ya escrito (`mailto:`), así no se pierde aunque FormSubmit esté caído (me pasó:
+    respondió `500 Server Error` después de 50 s).
   - **Spam:** campo trampa `_honey` (las personas no lo ven; si un bot lo completa, no se envía nada).
   - Mi mail aparece en el código de la página. FormSubmit permite cambiarlo por un alias después de
     activar el formulario.

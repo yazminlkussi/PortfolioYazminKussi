@@ -29,6 +29,8 @@ const { email } = Astro.props;
 
     <p class="dialogo__lento" data-lento hidden>el servicio está lento, sigue enviándose…</p>
     <p class="dialogo__error" data-error aria-live="polite"></p>
+    <!-- plan B si el servicio falla: abrir el correo con el texto ya escrito, así no se pierde -->
+    <a class="dialogo__planb" data-planb hidden>o mandámelo desde tu correo →</a>
   </div>
 
   <div class="dialogo__cuerpo dialogo__listo" data-listo hidden>
@@ -119,6 +121,17 @@ const { email } = Astro.props;
     width: 1px;
     height: 1px;
     opacity: 0;
+  }
+
+  .dialogo__planb {
+    display: inline-block;
+    margin-top: 6px;
+    font-size: 0.875rem;
+    color: var(--azul-texto);
+  }
+
+  .dialogo__planb[hidden] {
+    display: none;
   }
 
   .dialogo__lento {
@@ -224,11 +237,13 @@ const { email } = Astro.props;
   const listo = form.querySelector<HTMLElement>("[data-listo]")!;
   const botones = form.querySelector<HTMLElement>("[data-botones]")!;
   const otra = form.querySelector<HTMLElement>("[data-otra]")!;
+  const planB = form.querySelector<HTMLAnchorElement>("[data-planb]")!;
 
   // El endpoint AJAX de FormSubmit responde JSON en vez de redirigir a otra página
   const destino = `https://formsubmit.co/ajax/${form.dataset.email}`;
 
   function marcarError(campo: HTMLElement | null, texto: string) {
+    form.querySelector<HTMLElement>("[data-planb]")!.hidden = true;
     idea.removeAttribute("aria-invalid");
     correo.removeAttribute("aria-invalid");
     if (campo) {
@@ -304,6 +319,10 @@ const { email } = Astro.props;
             ? "Parece que no tenés conexión. Tu texto sigue acá."
             : "No se pudo enviar. Probá de nuevo; tu texto sigue acá."
       );
+      const asunto = encodeURIComponent("Nuevo proyecto ✿");
+      const cuerpo = encodeURIComponent(`Hola Yazmin! Tengo una idea: ${textoIdea}`);
+      planB.href = `mailto:${form.dataset.email}?subject=${asunto}&body=${cuerpo}`;
+      planB.hidden = false;
       console.warn("[contacto]", err);
     } finally {
       clearTimeout(reloj);
