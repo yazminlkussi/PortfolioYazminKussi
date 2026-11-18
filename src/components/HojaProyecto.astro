@@ -262,6 +262,25 @@ const [img1, img2] = p.imagenes ?? [];
     .hp__texto > p:not(.etiqueta):not(.hp__resumen) {
       font-size: 0.875rem;
     }
+
+    .hp__datos :global(.pildoras) {
+      gap: 4px;
+    }
+
+    .hp__datos {
+      margin-top: 12px;
+      padding-top: 10px;
+      gap: 8px 28px;
+    }
+
+    .hp__enlaces {
+      margin-top: 12px;
+    }
+
+    .hp__datos :global(.pildoras li) {
+      font-size: 0.8125rem;
+      padding: 3px 10px;
+    }
   }
 
   @media (min-width: 1100px) and (min-height: 640px) {
