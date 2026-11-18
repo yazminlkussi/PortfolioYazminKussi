@@ -4,7 +4,7 @@
 // tu programa de correo. Como el sitio es estático (no tiene servidor propio), el envío
 // pasa por FormSubmit (https://formsubmit.co), que recibe el formulario y me lo reenvía.
 //
-// Estados: validación · enviando · enviado · error (sin conexión / demora > 10 s / servicio caído)
+// Estados: validación · enviando (con aviso si tarda) · enviado · error (sin conexión / demora > 30 s / servicio caído)
 
 interface Props {
   email: string;
@@ -27,6 +27,7 @@ const { email } = Astro.props;
     <!-- trampa para bots: una persona nunca ve ni completa este campo -->
     <input class="dialogo__trampa" type="text" name="_honey" tabindex="-1" autocomplete="off" aria-hidden="true" />
 
+    <p class="dialogo__lento" data-lento hidden>el servicio está lento, sigue enviándose…</p>
     <p class="dialogo__error" data-error aria-live="polite"></p>
   </div>
 
@@ -120,6 +121,16 @@ const { email } = Astro.props;
     opacity: 0;
   }
 
+  .dialogo__lento {
+    margin: 6px 0 0;
+    font-size: 0.8125rem;
+    color: var(--tinta-suave);
+  }
+
+  .dialogo__lento[hidden] {
+    display: none;
+  }
+
   .dialogo__error {
     min-height: 1.2em;
     margin: 6px 0 0;
@@ -197,7 +208,9 @@ const { email } = Astro.props;
 </style>
 
 <script>
-  const LIMITE_MS = 10000;
+  // FormSubmit a veces tarda bastante en "despertar" (probé 20 s en el primer pedido)
+  const LIMITE_MS = 30000;
+  const AVISO_LENTO_MS = 6000;
   const MAIL_OK = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
   const form = document.querySelector<HTMLFormElement>("[data-contacto]")!;
@@ -253,6 +266,11 @@ const { email } = Astro.props;
 
     const ctrl = new AbortController();
     const reloj = setTimeout(() => ctrl.abort("timeout"), LIMITE_MS);
+    const lento = setTimeout(() => {
+      error.textContent = "";
+      anuncio.textContent = "El servicio está lento, sigue enviándose…";
+      formulario.querySelector<HTMLElement>("[data-lento]")!.hidden = false;
+    }, AVISO_LENTO_MS);
     enviando(true);
     anuncio.textContent = "Enviando tu mensaje…";
 
@@ -289,6 +307,8 @@ const { email } = Astro.props;
       console.warn("[contacto]", err);
     } finally {
       clearTimeout(reloj);
+      clearTimeout(lento);
+      formulario.querySelector<HTMLElement>("[data-lento]")!.hidden = true;
       enviando(false);
     }
   });

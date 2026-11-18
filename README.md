@@ -183,7 +183,9 @@ guardado y aparece cuando llegás.
     después de aceptarlo empiezan a llegar los mensajes.
   - **Validación antes de mandar:** texto no vacío y mail con formato válido (con `aria-invalid` y el
     error anunciado con `aria-live`).
-  - **Error o timeout (10 s):** el mensaje no se borra, así se puede reintentar sin volver a escribir.
+  - **Lentitud:** FormSubmit a veces tarda en responder (medí 20 s en un primer pedido y 0,3 s en el
+    siguiente). Si pasan 6 s, el diálogo avisa "el servicio está lento, sigue enviándose…".
+  - **Error o timeout (30 s):** el mensaje no se borra, así se puede reintentar sin volver a escribir.
     Si no hay conexión, lo dice.
   - **Spam:** campo trampa `_honey` (las personas no lo ven; si un bot lo completa, no se envía nada).
   - Mi mail aparece en el código de la página. FormSubmit permite cambiarlo por un alias después de
