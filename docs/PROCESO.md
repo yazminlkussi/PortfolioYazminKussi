@@ -1,6 +1,6 @@
 # Bitácora de proceso
 
-> Las partes marcadas con ✍️ las tengo que escribir yo, con mis palabras.
+> Las partes marcadas con ✍️ las completo yo, con mis palabras.
 
 ## 1. El problema de comunicación
 
@@ -36,7 +36,6 @@ Decisiones que salieron de ahí:
 - **Grano de impresión** con un SVG de ruido encima de todo.
 - El "corrimiento de registro" en mi apellido: un `text-shadow` rosa desplazado.
 
-✍️ _Bocetos, capturas o referencias (pegar acá o en `docs/img/`):_
 
 ### Segunda iteración: del fanzine al cuaderno de escritorio
 
@@ -64,7 +63,6 @@ Decisiones que tomé a partir de eso:
 Lo que se mantuvo de la primera versión: la API del museo, los estados, la mesa con física y el criterio
 de animación.
 
-✍️ _Capturas antes / después:_
 
 ### Tercera iteración: agarrar la hoja
 
@@ -97,6 +95,11 @@ agarrar la hoja** y que el cuaderno fuera **más realista**.
   transmitían lo que busco. Pasé a Openverse con fotos verticales y temas como rosa, café, flores,
   tipografía, packaging y film. Openverse tarda hasta 25 s y a veces falla, así que los temas fijos quedan
   precargados en un archivo y elegí a mano las fotos de cada uno.
+- **Inspo en formato sticker.** El tablero tipo Pinterest quedaba prolijo pero frío, muy de app. Pasé
+  las fotos a stickers: borde blanco troquelado, un giro leve distinto para cada una, sombra de papel y
+  un brillo de vinilo. Algunas tienen forma de arco y otras una esquina despegada que deja ver el dorso.
+  Así el tablero conversa con la mesa de collage y con el cuaderno, en vez de parecer otra web. Saqué el
+  título debajo de cada foto (los títulos de Flickr suelen ser "IMG_2034"); queda para lectores de pantalla.
 - **Mejor en el celular.** Las pestañas quedan fijas arriba y las flechas con el contador fijas abajo, como
   en una app. El espiral es más fino para ganar ancho.
 - **Información real en los proyectos.** El karaoke lo reescribí a partir de la presentación y el
@@ -110,6 +113,11 @@ agarrar la hoja** y que el cuaderno fuera **más realista**.
    en una barra de celular: hola, yo, trabajos, inspo, mesa y chau.
 3. Sumé la **mesa de collage** como interacción principal y la conecté con el moodboard. Así la API
    deja de ser un adorno: alimenta la interacción.
+4. En la segunda versión el scroll largo pasó a ser un **cuaderno de 8 hojas** (tapa, sobre mí, tres
+   proyectos, inspo, mesa y contacto) que se recorre de a una. Cada proyecto tiene su hoja, generada desde
+   `src/data/proyectos.ts`, y la URL guarda la hoja (`#nodo`, `#mesa`).
+5. En la cuarta, cada hoja tiene que entrar en la pantalla del escritorio sin scroll, y en el celular la
+   navegación queda fija arriba y abajo.
 
 ## 5. Interacciones: criterios
 
@@ -126,11 +134,30 @@ Seguí la filosofía de diseño de interfaces de Emil Kowalski:
 
 | Tamaño | Qué revisé | Resultado |
 | --- | --- | --- |
-| 375 × 812 (celular) | Índice abajo, portada en una columna, ficha de proyecto, mesa | Sin scroll horizontal y ficha legible |
-| ~800 px (tablet/notebook chica) | Portada en dos columnas, grilla de proyectos | OK |
-| Escritorio | Índice lateral, parallax, arrastre con mouse | OK |
+| 375 × 812 (celular) | Pestañas fijas arriba, barra fija abajo, hojas en una columna, stickers en 2 columnas, formulario | Sin scroll horizontal (`scrollWidth` = 375) y todo legible |
+| ~800 px (tablet) | Hojas en una y dos columnas, mesa | OK |
+| 1366 × 768 (notebook) | Que cada hoja entre sin scroll | Al principio Nodo y Dunkin' se pasaban: compacté textos y márgenes hasta que entraron |
+| 1440 × 900, 1900 × 1000, 1920 × 1080 | Lo mismo, más el tablero de inspo que scrollea por dentro | OK |
 
-✍️ _Agregar pruebas en mi celular real (modelo y navegador) y capturas:_
+Las pruebas finales las hice sobre la versión publicada en Vercel, no en local.
+
+**Escritorio (1440 × 900):**
+
+| Tapa | Nodo | Dunkin' |
+| --- | --- | --- |
+| ![Tapa en escritorio](img/escritorio-tapa.jpg) | ![Hoja de Nodo en escritorio](img/escritorio-nodo.jpg) | ![Hoja de Dunkin' en escritorio](img/escritorio-dunkin.jpg) |
+
+| Inspo | Mesa | Contacto |
+| --- | --- | --- |
+| ![Tablero de stickers en escritorio](img/escritorio-inspo.jpg) | ![Mesa de collage en escritorio](img/escritorio-mesa.jpg) | ![Contacto en escritorio](img/escritorio-contacto.jpg) |
+
+**Celular (375 × 812):**
+
+| Tapa | Nodo | Inspo | Contacto |
+| --- | --- | --- | --- |
+| ![Tapa en celular](img/celular-tapa.jpg) | ![Nodo en celular](img/celular-nodo.jpg) | ![Inspo en celular](img/celular-inspo.jpg) | ![Contacto en celular](img/celular-contacto.jpg) |
+
+✍️ _Prueba en mi celular real (modelo y navegador):_
 
 ## 7. Problemas y soluciones
 
@@ -162,7 +189,19 @@ Seguí la filosofía de diseño de interfaces de Emil Kowalski:
 - **(v3) Arrastrar sobre la mesa o los botones pasaba la hoja.** Excluyo esos elementos del agarre.
 - **(v3) La hoja dada vuelta generaba scroll horizontal** al salir por la izquierda: `overflow-x: clip`.
 
-✍️ _Otros problemas que encuentre:_
+- **(v4) Openverse es lento y se cae.** Una búsqueda nueva tarda 15–25 s y a veces devuelve 500/504; con
+  `page_size` mayor a 20 responde 401. Bajar los temas en el build tampoco servía (a veces quedaban vacíos),
+  así que los guardé en `src/data/inspo.json` con un script con reintentos, y el buscador en vivo tiene
+  un timeout de 30 s y un aviso de "sigue buscando…".
+- **(v4) FormSubmit no respondía.** Los primeros envíos tardaban más de 30 s y uno devolvió 500 a los 50 s.
+  Sumé el aviso de demora y el plan B por `mailto:`. Después respondió bien y pidió la activación por mail.
+- **(v4) El servidor de desarrollo mostraba CSS viejo.** El build tenía el CSS correcto; reiniciar el
+  servidor lo resolvió.
+- **(v4) Al compactar para que todo entre en pantalla, algunas hojas se volvían a pasar** en notebooks
+  de 768 px de alto. Extendí la versión compacta hasta 1040 px de alto y achiqué las pastillas de
+  herramientas.
+- **(v4) Las imágenes de Dunkin' venían en CMYK** dentro del PDF del manual. Las pasé a RGB y comparé el
+  bordó con el del manual antes de usarlas.
 
 ## 8. Pendiente / mejorable
 
@@ -191,8 +230,23 @@ Usé **Claude (Anthropic)** como asistente durante el proceso.
 - Que se sintiera estético y "colorido pero no tanto".
 - Aplicar la filosofía de diseño de Emil Kowalski.
 
-✍️ _Qué revisé, cambié o descarté del código generado:_
+**Qué revisé, cambié o descarté:**
+- Descarté la primera fuente del moodboard (V&A): funcionaba, pero las imágenes no tenían nada que ver
+  con mi estética. Pedí algo tipo Pinterest y después que fueran stickers.
+- Corregí las herramientas de Dunkin' (Illustrator, Photoshop y Figma) y decidí que el manual se abra
+  desde la carpeta rosa.
+- Pedí reescribir todos los textos porque sonaban genéricos, "a IA". Mi texto personal de "sobre mí" no
+  se tocó.
+- Saqué la firma del pie de contacto y los links de redes: decidí dejar solo el formulario a mi mail.
+- Pedí que todo entre en una pantalla sin scroll y que en el celular se pueda navegar mejor.
 
-✍️ _Qué errores o límites de la IA detecté:_
+**Errores o límites de la IA que detecté:**
+- Propuso APIs que después fallaron (Art Institute bloqueado por Cloudflare, Openverse lento) y hubo que
+  cambiar de estrategia sobre la marcha.
+- Algunos ajustes de tamaño arreglaban una pantalla y rompían otra: hubo que medir en varias
+  resoluciones antes de dar algo por terminado.
+- No podía ver todo en vivo: con el panel del navegador oculto las imágenes no cargaban, así que algunas
+  cosas las revisé yo en mi compu y en el celular.
+- Escribía textos correctos pero con tono de IA; los tuve que pedir de nuevo con otra voz.
 
 ✍️ _Qué partes del código puedo explicar y modificar (repasar antes de la defensa):_

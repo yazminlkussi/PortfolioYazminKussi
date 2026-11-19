@@ -3,6 +3,7 @@
 Examen final de **Programación Multimedial IV**.
 
 > **URL publicada:** https://portfolio-yazmin-kussi.vercel.app
+>
 > **Repositorio:** https://github.com/yazminlkussi/PortfolioYazminKussi
 
 ## La propuesta
@@ -23,7 +24,7 @@ Las hojas del cuaderno:
 | 01 | **tapa** | Quién soy, con carpetas que llevan a cada proyecto |
 | 02 | **sobre mí** | Mi presentación, con un interruptor que cambia el tono (profesional ↔ personal) |
 | 03–05 | **nodo, karaoke, dunkin** | Una hoja por proyecto: texto, rol, herramientas y collage visual |
-| 06 | **inspo** | Tablero de referencias tipo Pinterest con fotos Creative Commons (API) |
+| 06 | **inspo** | Tablero de referencias con fotos Creative Commons (API) presentadas como stickers |
 | 07 | **mesa** | Mesa de collage: quien visita arma su propia página |
 | 08 | **contacto** | Un diálogo "Nuevo proyecto" que me llega directo al mail |
 
@@ -110,7 +111,9 @@ src/
 2. **`HojaProyecto`**: recibe un proyecto de `src/data/proyectos.ts` y arma su hoja. Para sumar un
    proyecto alcanza con agregar un objeto a la lista: se crean solas la hoja, la pestaña y la carpeta de la
    tapa. Si el proyecto tiene `imagenes`, las muestra en las ventanas. Si no, usa composiciones CSS.
-3. **`Moodboard`**: consume la API de Openverse. Tiene temas y un buscador. Resuelve los estados de carga,
+3. **`Moodboard`**: consume la API de Openverse. Tiene temas y un buscador. Cada foto se muestra como
+   un sticker (borde blanco, giro leve, algunos en arco o con la esquina despegada); el giro y la forma se
+   asignan por posición, así el tablero se ve variado pero igual entre visitas. Resuelve los estados de carga,
    contenido, vacío y error (ver abajo). Cada obra tiene un botón "Pegar en la mesa" que dispara un
    evento `mesa:pegar`.
 4. **`MesaDeCollage`**: stickers arrastrables con mouse, dedo o teclado. Física propia y simple: inercia
@@ -202,13 +205,19 @@ guardado y aparece cuando llegás.
 
 ## Responsive y accesibilidad
 
-- **Mobile first.** En celular el índice es una tira de pestañas que se desliza y cada hoja va en una
-  columna, abriendo con el collage visual. Desde 900–980 px las hojas pasan a dos columnas y, desde
-  1100 px, el índice se vuelve pestañas que salen del costado del cuaderno.
+- **Mobile first.** En celular cada hoja va en una columna y abre con el collage visual. Las pestañas
+  quedan fijas arriba (se deslizan de costado) y una barra fija abajo tiene las flechas y el contador
+  "03 / 08", así se puede pasar de hoja sin bajar hasta el final. Los botones de música y lápiz suben
+  para no tapar esa barra.
+- **Escritorio sin scroll.** Desde 1100 px el índice son pestañas que salen del costado del cuaderno y
+  cada hoja ocupa el alto de la ventana (`100svh`); con pantallas de menos de 1040 px de alto el texto se
+  compacta. Medido en 1366 × 768, 1440 × 900, 1900 × 1000 y 1920 × 1080. El tablero de inspo scrollea por
+  dentro.
 - En celular se agarra la hoja con el dedo (`touch-action: pan-y`: lo vertical sigue scrolleando y lo
   horizontal pasa la hoja).
 - Arrastrar nunca es la única forma: pestañas, teclado y botones hacen lo mismo con un clic.
-- Tipografía fluida con `clamp()`. Probé en 375 px, ~800 px y escritorio, sin scroll horizontal.
+- Tipografía fluida con `clamp()`. Probé en 375 px, ~800 px y escritorio, sin scroll horizontal
+  (capturas en [`docs/img/`](docs/img) y en la [bitácora](docs/PROCESO.md#6-pruebas-en-distintos-tamaños)).
 - **Táctil:** áreas de toque de 44 px como mínimo, `touch-action: none` en los stickers para que
   arrastrar no scrollee la página e inputs de 16 px para que el celular no haga zoom.
 - **Contraste:** el texto es `#161616` y `#5b5b60` sobre papel `#f7f5f0`. El rosa claro se usa solo en
