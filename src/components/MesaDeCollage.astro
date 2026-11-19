@@ -30,7 +30,8 @@ const nombreAccesible = (s: Sticker) => s.texto || s.estilo;
 <div class="mesa-envoltorio">
   <div class="mesa__barra">
     <p class="mesa__ayuda" id="mesa-ayuda">
-      Arrastrá los stickers. Con teclado: <kbd>Tab</kbd> para elegir y <kbd>←↑→↓</kbd> para mover.
+      Arrastrá los stickers.<span class="mesa__teclado"> Con teclado: <kbd>Tab</kbd> para elegir y
+      <kbd>←↑→↓</kbd> para mover.</span>
     </p>
     <div class="mesa__acciones">
       <button class="boton" type="button" data-mezclar>Mezclar</button>
@@ -100,6 +101,13 @@ const nombreAccesible = (s: Sticker) => s.texto || s.estilo;
     align-items: center;
     gap: 12px;
     margin: 28px 0 16px;
+  }
+
+  /* en pantallas táctiles la ayuda de teclado no aplica */
+  @media (hover: none) {
+    .mesa__teclado {
+      display: none;
+    }
   }
 
   .mesa__ayuda {

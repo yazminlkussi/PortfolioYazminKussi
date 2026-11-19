@@ -1,13 +1,18 @@
 ---
-// Moodboard: obras que llegan en vivo desde la API pública de colecciones del
-// Victoria and Albert Museum de Londres (https://developers.vam.ac.uk/). No necesita clave.
+// Moodboard: fotos que llegan en vivo desde Openverse (https://api.openverse.org), el buscador de
+// imágenes con licencia Creative Commons de WordPress. No necesita clave. Pido solo fotos verticales,
+// el formato de Pinterest. (Antes usaba la colección del V&A Museum, pero sus piezas eran grabados y
+// objetos antiguos: no tenían la estética que buscaba para el tablero.)
 // (Primero probé la del Art Institute of Chicago, pero bloquea pedidos desde el navegador.)
 //
 // Estados que resuelve:
 //   cargando -> esqueletos de papel
 //   listo    -> grilla de obras
 //   vacio    -> la búsqueda no trajo obras con imagen
-//   error    -> sin conexión, API caída o demora > 8 s (con botón "reintentar")
+//   error    -> sin conexión, API caída, demora > 30 s o límite de pedidos (con botón "reintentar")
+//
+// Openverse tarda entre 15 y 25 s en responder una búsqueda nueva. Por eso los temas fijos vienen
+// precargados (src/data/inspo.json) y se ven al instante. El buscador consulta la API en vivo.
 //
 // Cada obra se puede "pegar" en la Mesa de collage: se manda un evento
 // `mesa:pegar` que escucha el componente MesaDeCollage.
@@ -22,9 +27,20 @@ interface Props {
 }
 
 const { temas } = Astro.props;
+
+// ---------- Temas precargados ----------
+// Openverse es lento e inestable con búsquedas nuevas, así que las fotos de los temas fijos se bajan con
+// `node scripts/actualizar-inspo.mjs` y quedan guardadas en src/data/inspo.json. Llegan dentro del HTML.
+import inspo from "../data/inspo.json";
+
+const precarga: Record<string, unknown[]> = Object.fromEntries(
+  temas.map((t) => [t.busqueda, (inspo as Record<string, unknown[]>)[t.busqueda] ?? []])
+);
+
 ---
 
 <div class="mood" data-mood>
+  <script type="application/json" data-precarga set:html={JSON.stringify(precarga)} />
   <div class="mood__controles">
     <div class="mood__temas" role="group" aria-label="Temas del moodboard">
       {
@@ -67,8 +83,9 @@ const { temas } = Astro.props;
   </div>
 
   <p class="mood__credito">
-    Imágenes de la colección del Victoria and Albert Museum, Londres, vía su
-    <a href="https://developers.vam.ac.uk/" target="_blank" rel="noopener">API pública</a>. Uso no comercial.
+    Fotos con licencia Creative Commons vía
+    <a href="https://openverse.org" target="_blank" rel="noopener">Openverse</a>. Cada pin conserva el crédito de su
+    autor y su licencia.
   </p>
 </div>
 
@@ -397,39 +414,47 @@ const { temas } = Astro.props;
 </style>
 
 <script>
-  const API = "https://api.vam.ac.uk/v2/objects/search";
-  const LIMITE_MS = 8000;
+  const API = "https://api.openverse.org/v1/images/";
+  // Openverse es lento con búsquedas nuevas (medí 16 a 26 s): le damos margen y avisamos si tarda
+  const LIMITE_MS = 30000;
+  const AVISO_LENTO_MS = 5000;
 
   // Lo que devuelve la API (solo los campos que usamos)
-  interface RegistroVAM {
-    systemNumber: string;
-    objectType: string;
-    _primaryTitle: string;
-    _primaryMaker?: { name?: string };
-    _primaryDate?: string;
-    _images?: { _iiif_image_base_url?: string | null };
+  interface RegistroOpenverse {
+    id: string;
+    title?: string;
+    creator?: string | null;
+    license?: string;
+    url?: string;
+    thumbnail?: string;
   }
 
-  // Nuestra versión "limpia" de una obra
+  // Nuestra versión "limpia" de una foto
   interface Obra {
     id: string;
     titulo: string;
     autor: string;
-    fecha: string;
-    imagenBase: string;
+    fecha: string; // acá va la licencia (ej. "CC BY")
+    imagen: string; // miniatura liviana para el tablero
+    original: string; // por si la miniatura falla
   }
 
+  // Las fotos de Flickr vienen en tamaños grandes: pedimos la versión de 640 px (sufijo _z), que alcanza
+  // para el tablero y pesa mucho menos
+  const achicar = (u?: string) =>
+    u?.replace(/^(https:\/\/live\.staticflickr\.com\/\d+\/\d+_[0-9a-f]+)(_[a-z0-9])?\.(jpg|png)$/, "$1_z.jpg");
+
   // Pasamos del formato de la API a nuestro formato
-  function aObra(r: RegistroVAM): Obra | null {
-    const base = r._images?._iiif_image_base_url;
-    if (!base) return null; // sin imagen no nos sirve
-    const autor = r._primaryMaker?.name;
+  function aObra(r: RegistroOpenverse): Obra | null {
+    const imagen = achicar(r.url) || r.thumbnail; // la original carga más rápido que la miniatura de Openverse
+    if (!imagen) return null; // sin imagen no nos sirve
     return {
-      id: r.systemNumber,
-      titulo: r._primaryTitle || r.objectType || "Sin título",
-      autor: autor && autor !== "Unknown" ? autor : "Autor desconocido",
-      fecha: r._primaryDate ?? "",
-      imagenBase: base,
+      id: r.id,
+      titulo: (r.title || "Sin título").trim(),
+      autor: r.creator ? `foto: ${r.creator}` : "Autor desconocido",
+      fecha: r.license ? `CC ${r.license.toUpperCase()}` : "",
+      imagen,
+      original: r.thumbnail ?? imagen,
     };
   }
 
@@ -443,10 +468,15 @@ const { temas } = Astro.props;
   const form = raiz.querySelector<HTMLFormElement>("[data-buscar]")!;
 
   let busquedaActual = chips[0]?.dataset.busqueda ?? "collage";
-  let pedido: AbortController | null = null;
 
-  // IIIF: pedimos la imagen al ancho justo que necesitamos
-  const urlImagen = (base: string, ancho = 400) => `${base}full/${ancho},/0/default.jpg`;
+  // Temas que ya vinieron dentro del HTML (pedidos en el build)
+  let precarga: Record<string, Obra[]> = {};
+  try {
+    precarga = JSON.parse(raiz.querySelector("[data-precarga]")?.textContent || "{}");
+  } catch {
+    precarga = {};
+  }
+  let pedido: AbortController | null = null;
 
   // Colores suaves de espera (como Pinterest: cada pin tiene su color mientras carga)
   const ESPERAS = ["#f3dfe5", "#e8e4dc", "#dfe6ee", "#efe7d6", "#e6e0ec", "#f1e3da"];
@@ -455,7 +485,7 @@ const { temas } = Astro.props;
   function mostrarCargando() {
     aviso.hidden = true;
     grilla.setAttribute("aria-busy", "true");
-    estado.textContent = `Buscando obras de “${busquedaActual}”…`;
+    estado.textContent = `Buscando “${busquedaActual}”…`;
     const altos = [280, 200, 320, 240, 300, 220, 260, 340, 210, 290];
     grilla.innerHTML = altos
       .map(
@@ -477,7 +507,7 @@ const { temas } = Astro.props;
   function mostrarObras(obras: Obra[]) {
     aviso.hidden = true;
     grilla.setAttribute("aria-busy", "false");
-    estado.textContent = `${obras.length} obras de “${busquedaActual}”. Pegá las que te gusten en la mesa.`;
+    estado.textContent = `${obras.length} fotos de “${busquedaActual}”. Pegá las que te gusten en la mesa.`;
     grilla.innerHTML = "";
 
     obras.forEach((obra, i) => {
@@ -490,14 +520,17 @@ const { temas } = Astro.props;
       marco.className = "obra__marco";
 
       const img = document.createElement("img");
-      img.src = urlImagen(obra.imagenBase);
+      img.src = obra.imagen;
       img.alt = `${obra.titulo}, ${obra.autor}`;
       img.loading = "lazy";
       img.decoding = "async";
       // Aparece con un fundido cuando terminó de bajar
       img.addEventListener("load", () => (img.dataset.lista = ""));
-      // Si una imagen puntual no carga, sacamos esa obra sin romper el resto
-      img.addEventListener("error", () => li.remove());
+      // Si la miniatura falla probamos con la original; si tampoco carga, sacamos ese pin
+      img.addEventListener("error", () => {
+        if (img.src !== obra.original) img.src = obra.original;
+        else li.remove();
+      });
 
       const velo = document.createElement("div");
       velo.className = "obra__velo";
@@ -523,7 +556,7 @@ const { temas } = Astro.props;
         }
         window.dispatchEvent(
           new CustomEvent("mesa:pegar", {
-            detail: { id: `obra-${obra.id}`, src: urlImagen(obra.imagenBase, 300), titulo: obra.titulo },
+            detail: { id: `obra-${obra.id}`, src: obra.imagen, titulo: obra.titulo },
           })
         );
         pegar.dataset.pegado = "";
@@ -543,7 +576,9 @@ const { temas } = Astro.props;
     busquedaActual = busqueda;
 
     // Cache por sesión: si ya buscaste esto, no volvemos a pedirlo
-    const claveCache = `mood-vam2:${busqueda}`;
+    if (precarga[busqueda]?.length) return mostrarResultado(precarga[busqueda]);
+
+    const claveCache = `mood-ov:${busqueda}`;
     try {
       const guardado = sessionStorage.getItem(claveCache);
       if (guardado) return mostrarResultado(JSON.parse(guardado));
@@ -556,21 +591,26 @@ const { temas } = Astro.props;
     const ctrl = new AbortController();
     pedido = ctrl;
     const temporizador = setTimeout(() => ctrl.abort("timeout"), LIMITE_MS);
+    const lento = setTimeout(() => {
+      if (pedido === ctrl) estado.textContent = `Openverse está lento con “${busqueda}”, sigue buscando…`;
+    }, AVISO_LENTO_MS);
 
     mostrarCargando();
 
     const params = new URLSearchParams({
       q: busqueda,
-      images_exist: "1", // solo objetos con foto
-      page_size: "30",
+      aspect_ratio: "tall", // solo fotos verticales, como en Pinterest
+      page_size: "20", // sin clave, Openverse acepta hasta 20 por pedido (más devuelve 401)
     });
 
     try {
       const res = await fetch(`${API}?${params}`, { signal: ctrl.signal });
+      // 429: Openverse limita las búsquedas anónimas (20 por minuto y 200 por día)
+      if (res.status === 429) throw new Error("limite");
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
-      // Nos quedamos solo con las obras que tienen imagen
-      const obras = ((json.records ?? []) as RegistroVAM[])
+      // Nos quedamos solo con las fotos que tienen imagen
+      const obras = ((json.results ?? []) as RegistroOpenverse[])
         .map(aObra)
         .filter((o): o is Obra => o !== null)
         .slice(0, 24);
@@ -585,16 +625,20 @@ const { temas } = Astro.props;
       if (ctrl.signal.aborted && ctrl.signal.reason !== "timeout") return;
       const porTiempo = ctrl.signal.reason === "timeout";
       estado.textContent = "";
+      const porLimite = err instanceof Error && err.message === "limite";
       mostrarAviso(
         "Se trabó la imprenta",
-        porTiempo
-          ? "El museo está tardando demasiado en responder. Probá de nuevo en un ratito."
-          : "No pude traer las obras. Revisá tu conexión o probá de nuevo.",
+        porLimite
+          ? "Hiciste muchas búsquedas seguidas y Openverse pide una pausa. Probá de nuevo en un minuto."
+          : porTiempo
+            ? "Las fotos están tardando demasiado en llegar. Probá de nuevo en un ratito."
+            : "No pude traer las fotos. Revisá tu conexión o probá de nuevo.",
         true
       );
       console.warn("[moodboard]", err);
     } finally {
       clearTimeout(temporizador);
+      clearTimeout(lento);
     }
   }
 
@@ -603,7 +647,7 @@ const { temas } = Astro.props;
       estado.textContent = "";
       mostrarAviso(
         "Página en blanco",
-        `No encontré obras con imagen para “${busquedaActual}”. Probá con otra palabra (en inglés funciona mejor).`,
+        `No encontré fotos para “${busquedaActual}”. Probá con otra palabra (en inglés funciona mejor).`,
         false
       );
     } else {
@@ -633,7 +677,7 @@ const { temas } = Astro.props;
 
   aviso.querySelector("[data-reintentar]")!.addEventListener("click", () => {
     try {
-      sessionStorage.removeItem(`mood-vam2:${busquedaActual}`);
+      sessionStorage.removeItem(`mood-ov:${busquedaActual}`);
     } catch {}
     cargar(busquedaActual);
   });

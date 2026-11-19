@@ -350,6 +350,53 @@ const dos = (n: number) => String(n).padStart(2, "0");
     color: var(--tinta-suave);
   }
 
+  /* ---------- Celular y tablet: navegación siempre a mano ----------
+     Las pestañas quedan fijas arriba y el pie (flechas + contador) fijo abajo, como en una app:
+     así no hay que scrollear hasta el final de una hoja larga para pasar a la siguiente. */
+  @media (max-width: 1099px) {
+    .cuaderno {
+      --espiral: 32px;
+      padding-top: 0;
+      padding-bottom: 0;
+    }
+
+    .cuaderno__indice {
+      position: sticky;
+      top: 0;
+      z-index: 15;
+      margin-inline: calc(var(--gutter) * -1);
+      padding: 10px var(--gutter) 2px;
+      background: color-mix(in srgb, var(--fondo) 82%, transparent);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+    .cuaderno__indice ol {
+      margin-bottom: 8px;
+    }
+
+    .cuaderno__espiral {
+      background-size: 32px 18px;
+    }
+
+    .cuaderno__pie {
+      position: sticky;
+      bottom: 0;
+      z-index: 15;
+      margin: 12px calc(var(--gutter) * -1) 0;
+      padding: 8px var(--gutter) calc(8px + env(safe-area-inset-bottom));
+      background: color-mix(in srgb, var(--fondo) 82%, transparent);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-top: 1px solid color-mix(in srgb, var(--tinta) 8%, transparent);
+    }
+
+    /* en el celu la pista ocupa lugar y ya se entiende con las flechas */
+    .cuaderno__pista {
+      display: none;
+    }
+  }
+
   /* ---------- Escritorio: índice como pestañas al costado ---------- */
   @media (min-width: 1100px) {
     .cuaderno {
@@ -557,7 +604,10 @@ const dos = (n: number) => String(n).padStart(2, "0");
     hoja.focus({ preventScroll: true });
     anuncio.textContent = `Hoja ${n + 1} de ${total}: ${hoja.dataset.nombre}`;
     // Si el cuaderno quedó más arriba (scrolleaste), volvemos al principio de la hoja
-    const arriba = zona.getBoundingClientRect().top;
+    // (en celular las pestañas quedan fijas arriba: dejamos lugar para que no tapen el principio de la hoja)
+    const indice = raiz.querySelector<HTMLElement>(".cuaderno__indice");
+    const tapa = indice && getComputedStyle(indice).position === "sticky" ? indice.offsetHeight : 0;
+    const arriba = zona.getBoundingClientRect().top - tapa;
     if (arriba < 0) window.scrollBy({ top: arriba - 16, behavior: reducido ? "auto" : "smooth" });
     window.dispatchEvent(new CustomEvent("cuaderno:hoja", { detail: { id: hoja.dataset.hoja } }));
   }

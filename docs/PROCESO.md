@@ -93,6 +93,12 @@ agarrar la hoja** y que el cuaderno fuera **más realista**.
 - **Contacto directo.** El formulario dejó de abrir el programa de correo y ahora envía el mensaje con
   FormSubmit. El servicio se cayó durante las pruebas (500 después de 50 s), así que sumé un aviso de
   demora y un plan B por `mailto:` para que el mensaje no se pierda.
+- **Moodboard con estética de Pinterest.** Las piezas del V&A eran grabados y objetos antiguos y no
+  transmitían lo que busco. Pasé a Openverse con fotos verticales y temas como rosa, café, flores,
+  tipografía, packaging y film. Openverse tarda hasta 25 s y a veces falla, así que los temas fijos quedan
+  precargados en un archivo y elegí a mano las fotos de cada uno.
+- **Mejor en el celular.** Las pestañas quedan fijas arriba y las flechas con el contador fijas abajo, como
+  en una app. El espiral es más fino para ganar ancho.
 - **Información real en los proyectos.** El karaoke lo reescribí a partir de la presentación y el
   glosario de Redes y Tecnología, y Dunkin' a partir del manual de marca. Del manual saqué dos fotos de
   aplicaciones y una copia liviana del PDF (de 52 MB a 26 MB) que se abre desde la carpeta de la hoja.

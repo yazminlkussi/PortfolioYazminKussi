@@ -27,13 +27,14 @@ const paginas = [
 
 const intereses = ["diseño visual", "código", "foto y video", "música", "cine", "arte", "lectura"];
 
+// Temas del moodboard: búsquedas en Openverse pensadas para un tablero tipo Pinterest
 const temasMoodboard = [
-  { etiqueta: "collage", busqueda: "collage" },
-  { etiqueta: "afiches", busqueda: "poster" },
-  { etiqueta: "rosa", busqueda: "pink" },
-  { etiqueta: "packaging", busqueda: "packaging" },
-  { etiqueta: "fotografía", busqueda: "photograph" },
-  { etiqueta: "flores", busqueda: "flowers" },
+  { etiqueta: "rosa", busqueda: "pink aesthetic" },
+  { etiqueta: "café", busqueda: "coffee aesthetic" },
+  { etiqueta: "flores", busqueda: "flowers aesthetic" },
+  { etiqueta: "tipografía", busqueda: "typography poster" },
+  { etiqueta: "packaging", busqueda: "packaging design" },
+  { etiqueta: "film", busqueda: "35mm film photography" },
 ];
 
 // Ambientes del tocadiscos (búsquedas en la API de iTunes)
@@ -146,8 +147,8 @@ const stickers = [
         <p class="etiqueta">inspo</p>
         <h2 class="hoja__titulo" id="inspo-titulo">lo que me <Seleccion cursor={false}>inspira</Seleccion></h2>
         <p class="hoja__bajada">
-          Un moodboard que se arma en vivo con piezas de la colección del Victoria and Albert Museum. Elegí un tema o
-          buscá algo (en inglés da mejores resultados) y llevá a la mesa lo que te sirva.
+          Un tablero de referencias que se arma en vivo con fotos Creative Commons. Elegí un tema o buscá algo (en
+          inglés da mejores resultados) y llevá a la mesa lo que te sirva.
         </p>
         <Moodboard temas={temasMoodboard} />
       </section>
@@ -212,9 +213,9 @@ const stickers = [
   }
 
   @media (max-width: 1099px) {
-    /* lugar para que los botones flotantes no tapen el pie del cuaderno */
-    main {
-      padding-bottom: 136px;
+    /* en celular el estuche flota justo arriba del pie fijo (flechas y contador) */
+    .estuche {
+      bottom: calc(76px + env(safe-area-inset-bottom));
     }
   }
 

@@ -23,7 +23,7 @@ Las hojas del cuaderno:
 | 01 | **tapa** | Quién soy, con carpetas que llevan a cada proyecto |
 | 02 | **sobre mí** | Mi presentación, con un interruptor que cambia el tono (profesional ↔ personal) |
 | 03–05 | **nodo, karaoke, dunkin** | Una hoja por proyecto: texto, rol, herramientas y collage visual |
-| 06 | **inspo** | Moodboard vivo tipo Pinterest con piezas de un museo real (API) |
+| 06 | **inspo** | Tablero de referencias tipo Pinterest con fotos Creative Commons (API) |
 | 07 | **mesa** | Mesa de collage: quien visita arma su propia página |
 | 08 | **contacto** | Un diálogo "Nuevo proyecto" que me llega directo al mail |
 
@@ -84,7 +84,7 @@ src/
 │   ├── Cuaderno.astro         hojas, índice y navegación (pasar la hoja)
 │   ├── HojaProyecto.astro     una hoja por proyecto (texto + collage)
 │   ├── InterruptorTono.astro  switch profesional / personal en "sobre mí"
-│   ├── Moodboard.astro        API del museo con estados
+│   ├── Moodboard.astro        tablero de fotos (Openverse) con estados
 │   ├── MesaDeCollage.astro    stickers arrastrables con física
 │   ├── DialogoContacto.astro  diálogo "Nuevo proyecto" → FormSubmit → mi mail
 │   ├── Lapiz.astro            dibujar sobre las hojas (canvas)
@@ -110,7 +110,7 @@ src/
 2. **`HojaProyecto`**: recibe un proyecto de `src/data/proyectos.ts` y arma su hoja. Para sumar un
    proyecto alcanza con agregar un objeto a la lista: se crean solas la hoja, la pestaña y la carpeta de la
    tapa. Si el proyecto tiene `imagenes`, las muestra en las ventanas. Si no, usa composiciones CSS.
-3. **`Moodboard`**: consume la API del museo. Tiene temas y un buscador. Resuelve los estados de carga,
+3. **`Moodboard`**: consume la API de Openverse. Tiene temas y un buscador. Resuelve los estados de carga,
    contenido, vacío y error (ver abajo). Cada obra tiene un botón "Pegar en la mesa" que dispara un
    evento `mesa:pegar`.
 4. **`MesaDeCollage`**: stickers arrastrables con mouse, dedo o teclado. Física propia y simple: inercia
@@ -138,24 +138,31 @@ src/
 componente sigue siendo independiente. Si pegás una obra antes de abrir la mesa, queda anotada en el
 guardado y aparece cuando llegás.
 
-## API: Victoria and Albert Museum
+## API: Openverse (moodboard)
 
-- **Fuente:** API pública de colecciones del V&A, Londres → https://developers.vam.ac.uk/ (no necesita clave).
-- **Pedido:** `GET https://api.vam.ac.uk/v2/objects/search?q=<tema>&images_exist=1&page_size=30`
-- **Qué uso:** título, autor, fecha y la URL base IIIF de la imagen. Pido cada imagen al ancho justo que
-  necesito (`.../full/400,/0/default.jpg`).
-- **Límites y errores:**
-  - **Cargando:** muestra esqueletos y `aria-busy`.
-  - **Error** (sin conexión o la API cae): un cuadro de diálogo "Se trabó la imprenta" con botón **Reintentar**.
-  - **Timeout:** si tarda más de 8 s, cancelo el pedido con `AbortController` y muestro el error.
-  - **Vacío:** si la búsqueda no trae piezas con imagen, aparece "Página en blanco" con una sugerencia.
-  - **Imagen rota:** si una sola imagen falla, saco esa pieza y el resto sigue.
-  - **Pedidos encimados:** si cambiás de tema rápido, cancelo el pedido anterior.
-  - **Cache** por sesión (`sessionStorage`) para no repetir pedidos.
-  - **Carga diferida:** recién pido a la API cuando abrís la hoja de inspo.
-  - Los cambios de estado se anuncian con `aria-live`.
-- Primero usé la API del Art Institute of Chicago, pero bloquea los pedidos desde el navegador (403 de
-  Cloudflare). Lo cuento en la [bitácora](docs/PROCESO.md).
+- **Fuente:** Openverse → https://api.openverse.org, el buscador de imágenes Creative Commons de
+  WordPress. No necesita clave y tiene CORS abierto.
+- **Pedido:** `GET https://api.openverse.org/v1/images/?q=<tema>&aspect_ratio=tall&page_size=20`.
+  `aspect_ratio=tall` trae solo fotos verticales, el formato de Pinterest.
+- **Qué uso:** título, autor (`creator`), licencia y la URL de la foto original (Flickr, Wikimedia…).
+  La miniatura de Openverse queda como respaldo si la original no carga.
+- **Límites (sin clave):** 20 resultados por pedido (con más devuelve `401`), 20 pedidos por minuto y 200
+  por día por visitante (`429`). Además, una búsqueda nueva tarda **entre 15 y 25 s** y a veces responde
+  `500`/`504`.
+- **Cómo lo resolví:** los 6 temas fijos se bajan con `node scripts/actualizar-inspo.mjs` (con reintentos)
+  y se guardan en `src/data/inspo.json`, así se ven al instante. El buscador sí consulta la API en vivo.
+- **Estados y errores:**
+  - **Cargando:** esqueletos de colores y `aria-busy`. Si tarda más de 5 s avisa "sigue buscando…".
+  - **Error** (sin conexión, API caída, `429`): un diálogo "Se trabó la imprenta" con botón **Reintentar**
+    y un mensaje distinto según la causa.
+  - **Timeout:** a los 30 s cancelo el pedido con `AbortController`.
+  - **Vacío:** "Página en blanco" con una sugerencia.
+  - **Imagen rota:** pruebo con la miniatura; si tampoco carga, saco ese pin y el resto sigue.
+  - **Pedidos encimados:** si cambiás de tema rápido, cancelo el anterior.
+  - **Cache** por sesión (`sessionStorage`) y los cambios de estado se anuncian con `aria-live`.
+- **Historia:** empecé con el Art Institute of Chicago (bloqueado por Cloudflare, `403`) y después usé la
+  colección del Victoria and Albert Museum. Funcionaba, pero traía grabados y objetos antiguos, y el
+  tablero necesitaba fotos con estética de Pinterest. Lo cuento en la [bitácora](docs/PROCESO.md).
 
 ## API 2: búsqueda de iTunes (tocadiscos)
 
@@ -229,7 +236,8 @@ guardado y aparece cuando llegás.
 
 ## Créditos y licencias
 
-- Imágenes del moodboard: © Victoria and Albert Museum, Londres, vía su API pública. Uso no comercial,
+- Fotos del moodboard: licencias Creative Commons vía Openverse. Cada pin muestra su autor y licencia.
+- Versiones anteriores del moodboard: Victoria and Albert Museum, Londres, vía su API pública. Uso no comercial,
   según sus [términos](https://www.vam.ac.uk/info/va-websites-terms-conditions).
 - Envío del formulario de contacto: FormSubmit (https://formsubmit.co).
 - Música del tocadiscos: previews y tapas provistos por la API de búsqueda de iTunes (Apple).
